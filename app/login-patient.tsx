@@ -63,8 +63,15 @@ export default function PatientLogin() {
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
+        {/* Register Link */}
+        <TouchableOpacity onPress={() => router.replace("/registerpatient")}>
+          <Text style={styles.registerText}>
+            Haben Sie kein Konto? dann registrieren
+          </Text>
+        </TouchableOpacity>
+
         {/* ------------------------- */}
-        {/*         MODAL            */}
+        {/*           MODAL           */}
         {/* ------------------------- */}
         <Modal
           transparent
@@ -165,6 +172,14 @@ const styles = StyleSheet.create({
 
   buttonText: { color: "#fff", fontSize: 18 },
 
+  /* Register link */
+  registerText: {
+    fontSize: 13,
+    color: "#3A6DCB",
+    textAlign: "center",
+    marginTop: 15,
+  },
+
   /* MODAL STYLES */
   modalBG: {
     flex: 1,
@@ -225,3 +240,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

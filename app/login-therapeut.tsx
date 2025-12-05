@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ImageBackground,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function TherapeutLogin() {
@@ -61,6 +61,13 @@ export default function TherapeutLogin() {
         {/* Login Button */}
         <TouchableOpacity style={styles.button} onPress={() => router.push("/menu")}>
           <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+
+        {/* Register Link */}
+        <TouchableOpacity onPress={() => router.replace("/registertherapeut")}>
+          <Text style={styles.registerText}>
+            Haben Sie kein Konto? dann registrieren
+          </Text>
         </TouchableOpacity>
 
         {/* ----------------------------- */}
@@ -163,6 +170,14 @@ const styles = StyleSheet.create({
 
   buttonText: { color: "#fff", fontSize: 18 },
 
+  /* Register link */
+  registerText: {
+    fontSize: 13,
+    color: "#3A6DCB",
+    textAlign: "center",
+    marginTop: 15,
+  },
+
   /* MODAL */
   modalBG: {
     flex: 1,
@@ -223,3 +238,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
