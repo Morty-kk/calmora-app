@@ -1,11 +1,7 @@
-// app/menu.tsx
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Link } from 'expo-router';
 import React from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-// Update the import path if BottomTabs is in a different location, e.g.:
-import BottomTabs from '../components/BottomTabs';
-// Or create the file at '../src/components/BottomTabs.tsx' if it does not exist.
 
 function Tile({
   title,
@@ -26,7 +22,7 @@ function Tile({
   );
 }
 
-export default function Menu() {
+export default function Home() {
   const name = 'Karl';
 
   return (
@@ -61,7 +57,7 @@ export default function Menu() {
         </View>
 
         {/* Termin CTA */}
-        <Pressable style={styles.apptBtn} onPress={() => router.push('/appointment')}>
+        <Pressable style={styles.apptBtn}>
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
         </Pressable>
 
@@ -73,8 +69,29 @@ export default function Menu() {
           <Text style={styles.panicText}>DON’T{'\n'}PANIC</Text>
         </Pressable>
 
-        {/* Bottom Tabs */}
-        <BottomTabs />
+        {/* Bottom Tabs (FIXED) */}
+        <View style={styles.tabs}>
+          <Link href="/home" asChild>
+            <Pressable style={styles.tabItem}>
+              <Ionicons name="home" size={18} color="#111827" />
+              <Text style={styles.tabLabel}>Startseite</Text>
+            </Pressable>
+          </Link>
+
+          <Link href="/chat" asChild>
+            <Pressable style={styles.tabItem}>
+              <Ionicons name="chatbubble-ellipses" size={18} color="#111827" />
+              <Text style={styles.tabLabel}>Chat</Text>
+            </Pressable>
+          </Link>
+
+          <Link href="/profile" asChild>
+            <Pressable style={styles.tabItem}>
+              <Ionicons name="person" size={18} color="#111827" />
+              <Text style={styles.tabLabel}>Profil</Text>
+            </Pressable>
+          </Link>
+        </View>
       </View>
     </ImageBackground>
   );
@@ -82,7 +99,7 @@ export default function Menu() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  wrap: { flex: 1, padding: 16, paddingBottom: 120 }, // why: Platz für Tabs
+  wrap: { flex: 1, padding: 16, paddingBottom: 90 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brand: { fontSize: 20, fontWeight: '700', opacity: 0.85, color: '#2B2B2B' },
   greeting: { fontSize: 18, fontWeight: '700', color: '#3b4b7a', marginTop: 8 },
@@ -112,7 +129,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 14,
-    zIndex: 2,
   },
   apptBtnText: { fontWeight: '700', color: '#111827' },
 
@@ -125,7 +141,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 16,
-    marginBottom: 120, // why: Tabs überdecken nicht
   },
   panicText: { fontSize: 18, fontWeight: '900', lineHeight: 20, color: '#1f2937' },
+
+  tabs: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+    backgroundColor: '#F5D8C9',
+    borderRadius: 16,
+    flexDirection: 'row',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    borderWidth: 1,
+    borderColor: '#00000010',
+  },
+  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 10, gap: 2 },
+  tabLabel: { fontSize: 12, color: '#111827' },
 });
