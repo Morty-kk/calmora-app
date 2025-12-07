@@ -81,9 +81,9 @@ export default function PatientLogin() {
           </TouchableOpacity>
 
           {/* Login Button */}
-          <TouchableOpacity style={styles.button} onPress={onLogin}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push("/menu")}>
+                    <Text style={styles.buttonText}>Login</Text>
+                  </TouchableOpacity>
 
           {/* Register Link */}
           <TouchableOpacity onPress={() => router.replace("/registerpatient")}>
