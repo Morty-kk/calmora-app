@@ -51,8 +51,16 @@ export default function Menu() {
         {/* Übungen */}
         <Text style={styles.sectionTitle}>Übungen:</Text>
         <View style={styles.grid}>
-          <Tile title="Atmung" icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />} />
-          <Tile title="Achtsamkeit" icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />} />
+           <Tile
+    title="Atmung"
+    icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />}
+    onPress={() => router.push('/breath')}
+  />
+          <Tile
+  title="Achtsamkeit"
+  icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />}
+  onPress={() => router.push("/achtsamkeit")}
+/>
           <Tile
             title={'Progressive\nMuskelentspannung'}
             icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
@@ -125,7 +133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 16,
-    marginBottom: 120, // why: Tabs überdecken nicht
+    marginBottom: 150, // why: Tabs überdecken nicht
   },
   panicText: { fontSize: 18, fontWeight: '900', lineHeight: 20, color: '#1f2937' },
 });
