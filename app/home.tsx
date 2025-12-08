@@ -1,7 +1,46 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import React from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const PressableScale = React.forwardRef<React.ElementRef<typeof Pressable>, React.ComponentProps<typeof Pressable>>(
+  ({ style, onPressIn, onPressOut, children, ...rest }, ref) => {
+    const scale = React.useRef(new Animated.Value(1)).current;
+
+    const animate = (toValue: number) =>
+      Animated.spring(scale, {
+        toValue,
+        speed: 20,
+        bounciness: 6,
+        useNativeDriver: true,
+      }).start();
+
+    return (
+      <AnimatedPressable
+        ref={ref}
+        {...rest}
+        onPressIn={(event) => {
+          animate(0.96);
+          onPressIn?.(event);
+        }}
+        onPressOut={(event) => {
+          animate(1);
+          onPressOut?.(event);
+        }}
+        style={(state) => [
+          { transform: [{ scale }] },
+          typeof style === 'function' ? style(state) : style,
+          state.pressed && { opacity: 0.95 },
+        ]}
+      >
+        {children}
+      </AnimatedPressable>
+    );
+  },
+);
+PressableScale.displayName = 'PressableScale';
 
 function Tile({
   title,
@@ -13,12 +52,12 @@ function Tile({
   onPress?: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.tile}>
+    <PressableScale onPress={onPress} style={styles.tile}>
       <View style={{ alignItems: 'center', gap: 6 }}>
         {icon}
         <Text style={styles.tileTitle}>{title}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -57,39 +96,39 @@ export default function Home() {
         </View>
 
         {/* Termin CTA */}
-        <Pressable style={styles.apptBtn}>
+        <PressableScale style={styles.apptBtn}>
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
-        </Pressable>
+        </PressableScale>
 
         <View style={{ flex: 1 }} />
 
         {/* Don't Panic */}
-        <Pressable style={styles.panic}>
+        <PressableScale style={styles.panic}>
           <Ionicons name="megaphone" size={22} color="#1f2937" />
           <Text style={styles.panicText}>DON’T{'\n'}PANIC</Text>
-        </Pressable>
+        </PressableScale>
 
         {/* Bottom Tabs (FIXED) */}
         <View style={styles.tabs}>
           <Link href="/home" asChild>
-            <Pressable style={styles.tabItem}>
+            <PressableScale style={styles.tabItem}>
               <Ionicons name="home" size={18} color="#111827" />
               <Text style={styles.tabLabel}>Startseite</Text>
-            </Pressable>
+            </PressableScale>
           </Link>
 
           <Link href="/chat" asChild>
-            <Pressable style={styles.tabItem}>
+            <PressableScale style={styles.tabItem}>
               <Ionicons name="chatbubble-ellipses" size={18} color="#111827" />
               <Text style={styles.tabLabel}>Chat</Text>
-            </Pressable>
+            </PressableScale>
           </Link>
 
           <Link href="/profile" asChild>
-            <Pressable style={styles.tabItem}>
+            <PressableScale style={styles.tabItem}>
               <Ionicons name="person" size={18} color="#111827" />
               <Text style={styles.tabLabel}>Profil</Text>
-            </Pressable>
+            </PressableScale>
           </Link>
         </View>
       </View>
