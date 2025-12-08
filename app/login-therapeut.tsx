@@ -58,10 +58,10 @@ export default function TherapeutLogin() {
           <Text style={styles.forgot}>Passwort vergessen?</Text>
         </TouchableOpacity>
 
-        {/* Login Button */}
-        <TouchableOpacity style={styles.button} onPress={() => router.push("/menu")}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity style={styles.button} onPress={() => {}}>
+           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
+
 
         {/* Register Link */}
         <TouchableOpacity onPress={() => router.replace("/registertherapeut")}>

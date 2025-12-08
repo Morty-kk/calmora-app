@@ -33,7 +33,7 @@ export default function BottomTabs() {
         flexDirection: 'row',
         shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
         borderWidth: 1, borderColor: '#00000010',
-        zIndex: 100,          // über allen Karten
+        zIndex: 1,          // über allen Karten
         elevation: 8,         // Android
         pointerEvents: 'auto', // sicher klicken
       }}

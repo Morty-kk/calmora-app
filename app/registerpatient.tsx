@@ -1,15 +1,17 @@
 // app/registerpatient.tsx
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function RegisterPatient() {
@@ -23,15 +25,33 @@ export default function RegisterPatient() {
   const [agreed, setAgreed] = useState(false);
   const [showError, setShowError] = useState(false);
 
-  const onRegister = () => {
-    if (!agreed) {
-      setShowError(true);
-      return;
-    }
+ const onRegister = async () => {
+  if (!agreed) {
+    setShowError(true);
+    return;
+  }
 
-    setShowError(false);
-    router.push("/menu");
+  setShowError(false);
+
+  // 📌 تخزين بيانات المستخدم محلياً
+  const userData = {
+    name: firstName + " " + lastName,
+    phone,
+    birthdate,
+    gender,
+    email,
   };
+
+  try {
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
+    console.log("Benutzer gespeichert:", userData);
+  } catch (e) {
+    console.error("Fehler beim Speichern", e);
+  }
+
+  router.push("/menu");
+};
+
 
   return (
     <ImageBackground
