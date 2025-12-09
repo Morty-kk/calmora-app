@@ -62,9 +62,11 @@ export default function Menu() {
   onPress={() => router.push("/achtsamkeit")}
 />
           <Tile
-            title={'Progressive\nMuskelentspannung'}
-            icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
-          />
+  title={'Progressive\nMuskelentspannung'}
+  icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
+  onPress={() => router.push("/pme")}
+ />
+
           <Tile title="Meditation" icon={<Ionicons name="flower-outline" size={28} color="#2B2B2B" />} />
         </View>
 

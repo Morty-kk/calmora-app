@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function SinnesCheck() {
