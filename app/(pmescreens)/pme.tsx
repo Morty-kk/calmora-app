@@ -49,8 +49,8 @@ export default function PMEOverview() {
           <TouchableOpacity
             style={styles.cardButton}
             onPress={() => {
-              // لاحقاً: router.push("/pme_lang_intro")
-              router.push("/pme_kurz_intro"); // مؤقتاً نفس القصيرة بس ليتجنب الكراش
+              // لاحقاrouter.push("/pme_lang_intro")
+              router.push("/pme_lange_intro"); // مؤقتاً نفس القصيرة بس ليتجنب الكراش
             }}
           >
             <Ionicons name="play-circle" size={18} color="#fff" />

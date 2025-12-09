@@ -1,20 +1,20 @@
-// app/(pmescreens)/pme_step2.tsx
+// app/(pmescreens)/pme_lange_step2.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Image,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const ORANGE = "#F28C3A";
 
-export default function PMEStep2() {
-  const [time, setTime] = useState(30);
+export default function PMELangeStep2() {
+  const [time, setTime] = useState(45);
   const [running, setRunning] = useState(false);
 
   // Countdown
@@ -32,31 +32,33 @@ export default function PMEStep2() {
     if (running) {
       setRunning(false);
     } else {
-      if (time === 0) setTime(30);
+      if (time === 0) setTime(45);
       setRunning(true);
     }
   };
 
   const handleNext = () => {
     setRunning(false);
-    router.push("/pme_step3"); // ← الخطوة التالية
+    router.push("/pme_lange_step3"); // ⇦ الخطوة الثالثة
   };
 
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.container}>
 
-        {/* BACK */}
+        {/* BACK BUTTON */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={30} color="#555" />
+          <Ionicons name="arrow-back" size={32} color="#fff" />
         </TouchableOpacity>
 
         {/* TITLE */}
         <Text style={styles.header}>Schultern</Text>
+
+        {/* SUBTITLE BLACK */}
         <Text style={styles.subtitle}>
           Ziehe deine Schultern nach oben und halte die Spannung
         </Text>
@@ -75,9 +77,9 @@ export default function PMEStep2() {
           style={styles.image}
         />
 
-        {/* BUTTONS: Start/Stop + Zurück + Weiter */}
+        {/* BUTTONS */}
         <View style={styles.buttonsRow}>
-
+          
           {/* START / STOP */}
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStartStop}>
             <Text style={styles.primaryBtnText}>
@@ -85,23 +87,13 @@ export default function PMEStep2() {
             </Text>
           </TouchableOpacity>
 
-          {/* ZURÜCK */}
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.secondaryBtnText}>Zurück</Text>
-          </TouchableOpacity>
-
           {/* WEITER */}
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={handleNext}
-          >
+          <TouchableOpacity style={styles.secondaryBtn} onPress={handleNext}>
             <Text style={styles.secondaryBtnText}>Weiter</Text>
           </TouchableOpacity>
 
         </View>
+
       </View>
     </ImageBackground>
   );
@@ -120,12 +112,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
+    padding: 6,
   },
 
   header: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    color: "#D17842",
+    color: ORANGE,       // 🟧 العنوان برتقاني مثل ما بدك
     marginBottom: 6,
   },
 
@@ -134,6 +127,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     paddingHorizontal: 20,
+    color: "#000",       // ⚫ النص أسود بالضبط مثل Schritt 1
   },
 
   circle: {
@@ -144,7 +138,7 @@ const styles = StyleSheet.create({
     borderColor: ORANGE,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffffaa",
+    backgroundColor: "#ffffffbb",
   },
 
   innerCircle: {
@@ -174,11 +168,12 @@ const styles = StyleSheet.create({
   },
 
   primaryBtn: {
-    backgroundColor: "#F28C3A",
+    backgroundColor: ORANGE,
     paddingHorizontal: 28,
     paddingVertical: 10,
     borderRadius: 24,
   },
+
   primaryBtnText: {
     color: "#fff",
     fontSize: 18,
@@ -186,24 +181,18 @@ const styles = StyleSheet.create({
   },
 
   secondaryBtn: {
-    backgroundColor: "#ffffffdd",
+    backgroundColor: "#ffffffcc",
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: ORANGE,
   },
+
   secondaryBtnText: {
     color: ORANGE,
     fontSize: 18,
     fontWeight: "700",
   },
 });
-
-
-
-
-
-
-
 

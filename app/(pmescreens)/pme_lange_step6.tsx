@@ -1,4 +1,4 @@
-// app/(pmescreens)/pme_step2.tsx
+// app/(pmescreens)/pme_lange_step6.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -13,11 +13,11 @@ import {
 
 const ORANGE = "#F28C3A";
 
-export default function PMEStep2() {
-  const [time, setTime] = useState(30);
+export default function PMELangeStep6() {
+  const [time, setTime] = useState(45);
   const [running, setRunning] = useState(false);
 
-  // Countdown
+  // Countdown logic
   useEffect(() => {
     if (!running || time <= 0) return;
 
@@ -32,33 +32,33 @@ export default function PMEStep2() {
     if (running) {
       setRunning(false);
     } else {
-      if (time === 0) setTime(30);
+      if (time === 0) setTime(45);
       setRunning(true);
     }
   };
 
-  const handleNext = () => {
+  const handleFinish = () => {
     setRunning(false);
-    router.push("/pme_step3"); // ← الخطوة التالية
+    router.push("/pme_lange_done"); // ← الصفحة الأخيرة
   };
 
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.container}>
 
-        {/* BACK */}
+        {/* BACK BUTTON */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={30} color="#555" />
+          <Ionicons name="arrow-back" size={32} color="#fff" />
         </TouchableOpacity>
 
         {/* TITLE */}
-        <Text style={styles.header}>Schultern</Text>
+        <Text style={styles.header}>Beine & Füße</Text>
         <Text style={styles.subtitle}>
-          Ziehe deine Schultern nach oben und halte die Spannung
+          Spanne deine Beine und Füße fest an und halte die Spannung
         </Text>
 
         {/* TIMER CIRCLE */}
@@ -75,7 +75,7 @@ export default function PMEStep2() {
           style={styles.image}
         />
 
-        {/* BUTTONS: Start/Stop + Zurück + Weiter */}
+        {/* BUTTONS */}
         <View style={styles.buttonsRow}>
 
           {/* START / STOP */}
@@ -85,20 +85,9 @@ export default function PMEStep2() {
             </Text>
           </TouchableOpacity>
 
-          {/* ZURÜCK */}
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.secondaryBtnText}>Zurück</Text>
-          </TouchableOpacity>
-
-          {/* WEITER */}
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={handleNext}
-          >
-            <Text style={styles.secondaryBtnText}>Weiter</Text>
+          {/* FERTIG */}
+          <TouchableOpacity style={styles.secondaryBtn} onPress={handleFinish}>
+            <Text style={styles.secondaryBtnText}>Fertig</Text>
           </TouchableOpacity>
 
         </View>
@@ -120,12 +109,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
+    padding: 6,
   },
 
   header: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    color: "#D17842",
+    color: "#F28C3A", // ← برتقاني مثل kurz
     marginBottom: 6,
   },
 
@@ -134,6 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     paddingHorizontal: 20,
+    color: "#000", // ← أسود
   },
 
   circle: {
@@ -144,7 +135,7 @@ const styles = StyleSheet.create({
     borderColor: ORANGE,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffffaa",
+    backgroundColor: "#ffffffbb",
   },
 
   innerCircle: {
@@ -174,7 +165,7 @@ const styles = StyleSheet.create({
   },
 
   primaryBtn: {
-    backgroundColor: "#F28C3A",
+    backgroundColor: ORANGE,
     paddingHorizontal: 28,
     paddingVertical: 10,
     borderRadius: 24,
@@ -186,7 +177,7 @@ const styles = StyleSheet.create({
   },
 
   secondaryBtn: {
-    backgroundColor: "#ffffffdd",
+    backgroundColor: "#ffffffcc",
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 24,
@@ -199,11 +190,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-
-
-
-
-
-
-

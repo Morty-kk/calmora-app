@@ -49,7 +49,7 @@ export default function PMESteps() {
 
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      //source={require("../../assets/relax.png")}
       style={styles.bg}
       resizeMode="cover"
     >
