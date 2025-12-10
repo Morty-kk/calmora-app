@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useUser } from '../../context/UserContext';
 
@@ -24,6 +24,38 @@ export default function HomeScreen() {
     return `Hey ${firstName}, wie schön, dass du da bist`;
   }, [user]);
 
+  // Robust navigation to Panic from Home:
+  // 1) try direct navigate('Panic')
+  // 2) try navigate into Patient drawer: navigate('Patient', { screen: 'Panic' })
+  // 3) try parent navigator
+  const goPanic = () => {
+    try {
+      navigation.navigate('Panic');
+      return;
+    } catch (e) {
+      console.log('goPanic: direct navigate failed', e);
+    }
+
+    try {
+      navigation.navigate('Patient', { screen: 'Panic' });
+      return;
+    } catch (e) {
+      console.log('goPanic: navigate Patient->Panic failed', e);
+    }
+
+    try {
+      const parent = navigation.getParent && navigation.getParent();
+      if (parent && typeof parent.navigate === 'function') {
+        parent.navigate('Panic');
+        return;
+      }
+    } catch (e) {
+      console.log('goPanic: parent navigate failed', e);
+    }
+
+    console.log('goPanic: all attempts failed');
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
@@ -31,7 +63,8 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.subtitle}>Wir begleiten dich Schritt für Schritt.</Text>
         </View>
-        <Pressable style={styles.panicButton} onPress={() => navigation.navigate('Panic')}>
+
+        <Pressable style={styles.panicButton} onPress={goPanic}>
           <Ionicons name="alert" size={22} color="#DC2626" />
           <Text style={styles.panicText}>Panik</Text>
         </Pressable>
@@ -60,7 +93,11 @@ export default function HomeScreen() {
           </Pressable>
         </View>
         {exerciseCards.map((exercise) => (
-          <Pressable key={exercise.title} style={styles.exerciseCard} onPress={() => navigation.navigate('Exercises')}>
+          <Pressable
+            key={exercise.title}
+            style={styles.exerciseCard}
+            onPress={() => navigation.navigate('Exercises')}
+          >
             <View style={styles.exerciseIcon}>
               <Ionicons name={exercise.icon} size={22} color="#1D4ED8" />
             </View>
