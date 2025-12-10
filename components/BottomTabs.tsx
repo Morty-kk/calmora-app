@@ -9,7 +9,7 @@ export default function BottomTabs() {
 
   const Item = ({
     href, label, icon,
-  }: { href: '/menu' | '/chat' | '/profile'; label: string; icon: keyof typeof Ionicons.glyphMap }) => (
+  }: { href: '/menu' | '/chat-list' | '/profile'; label: string; icon: keyof typeof Ionicons.glyphMap }) => (
     <Link href={href} asChild>
       <Pressable
         style={{
@@ -39,7 +39,7 @@ export default function BottomTabs() {
       }}
     >
       <Item href="/menu" label="Startseite" icon="home" />
-      <Item href="/chat" label="Chat" icon="chatbubble-ellipses" />
+      <Item href="/chat-list" label="Chat" icon="chatbubble-ellipses" />
       <Item href="/profile" label="Profil" icon="person" />
     </View>
   );

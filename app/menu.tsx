@@ -1,11 +1,9 @@
 // app/menu.tsx
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-// Update the import path if BottomTabs is in a different location, e.g.:
 import BottomTabs from '../components/BottomTabs';
-// Or create the file at '../src/components/BottomTabs.tsx' if it does not exist.
 
 function Tile({
   title,
@@ -28,6 +26,7 @@ function Tile({
 
 export default function Menu() {
   const name = 'Karl';
+  const [menuOpen, setMenuOpen] = useState(false); // ✅ MENU STATE
 
   return (
     <ImageBackground source={require('../assets/bg.png')} style={styles.bg} resizeMode="cover">
@@ -35,8 +34,13 @@ export default function Menu() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brand}>Calmora</Text>
-          <Ionicons name="menu" size={22} color="#2B2B2B" />
+
+          {/* ✅ DREI-STRICHE BUTTON */}
+          <Pressable onPress={() => setMenuOpen(true)}>
+            <Ionicons name="menu" size={22} color="#2B2B2B" />
+          </Pressable>
         </View>
+
         <Text style={styles.greeting}>Hey {name}, wie schön,{'\n'}dass du da bist</Text>
         <View style={styles.divider} />
 
@@ -51,23 +55,28 @@ export default function Menu() {
         {/* Übungen */}
         <Text style={styles.sectionTitle}>Übungen:</Text>
         <View style={styles.grid}>
-           <Tile
-    title="Atmung"
-    icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />}
-    onPress={() => router.push('/breath')}
-  />
           <Tile
-  title="Achtsamkeit"
-  icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />}
-  onPress={() => router.push("/achtsamkeit")}
-/>
-          <Tile
-  title={'Progressive\nMuskelentspannung'}
-  icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
-  onPress={() => router.push("/pme")}
- />
+            title="Atmung"
+            icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />}
+            onPress={() => router.push('/breath')}
+          />
 
-          <Tile title="Meditation" icon={<Ionicons name="flower-outline" size={28} color="#2B2B2B" />} />
+          <Tile
+            title="Achtsamkeit"
+            icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />}
+            onPress={() => router.push("/achtsamkeit")}
+          />
+
+          <Tile
+            title={'Progressive\nMuskelentspannung'}
+            icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
+            onPress={() => router.push("/pme")}
+          />
+
+          <Tile
+            title="Meditation"
+            icon={<Ionicons name="flower-outline" size={28} color="#2B2B2B" />}
+          />
         </View>
 
         {/* Termin CTA */}
@@ -86,13 +95,75 @@ export default function Menu() {
         {/* Bottom Tabs */}
         <BottomTabs />
       </View>
+
+      {/* ===================== */}
+      {/* ✅ OVERLAY MENÜ */}
+      {/* ===================== */}
+      {menuOpen && (
+        <View style={styles.menuOverlay}>
+          {/* Klick außerhalb schließt Menü */}
+          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
+
+          {/* Menü Karte */}
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>Menü:</Text>
+            <View style={styles.menuDivider} />
+
+            <Pressable style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+              <Text style={styles.menuText}>Home</Text>
+            </Pressable>
+
+            <Pressable style={styles.menuItem}>
+              <Text style={styles.menuText}>Meine Therapie</Text>
+            </Pressable>
+
+            <View style={{ marginLeft: 16 }}>
+              <Pressable style={styles.menuItem}>
+                <Text style={styles.subMenuText}>Sitzungen</Text>
+              </Pressable>
+
+              <Pressable style={styles.menuItem} onPress={() => router.push("/appointment")}>
+                <Text style={styles.subMenuText}>Termine</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.push("/chat");
+                }}
+              >
+                <Text style={styles.subMenuText}>Chat</Text>
+              </Pressable>
+            </View>
+
+            <Pressable style={styles.menuItem} onPress={() => router.push("/profile")}>
+              <Text style={styles.menuText}>Mein Profil</Text>
+            </Pressable>
+
+            <Pressable style={styles.menuItem} onPress={() => router.push("/mindfulness")}>
+              <Text style={styles.menuText}>Übungen</Text>
+            </Pressable>
+
+            <Pressable style={styles.menuItem} onPress={() => router.push("/diary")}>
+              <Text style={styles.menuText}>Tagebuch</Text>
+            </Pressable>
+
+            <View style={styles.menuDivider} />
+
+            <Pressable style={styles.menuItem}>
+              <Text style={styles.logoutText}>abmelden</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  wrap: { flex: 1, padding: 16, paddingBottom: 120 }, // why: Platz für Tabs
+  wrap: { flex: 1, padding: 16, paddingBottom: 120 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brand: { fontSize: 20, fontWeight: '700', opacity: 0.85, color: '#2B2B2B' },
   greeting: { fontSize: 18, fontWeight: '700', color: '#3b4b7a', marginTop: 8 },
@@ -135,7 +206,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 16,
-    marginBottom: 150, // why: Tabs überdecken nicht
+    marginBottom: 150,
   },
   panicText: { fontSize: 18, fontWeight: '900', lineHeight: 20, color: '#1f2937' },
+
+  /* ✅ MENU STYLES */
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#00000040",
+  },
+  menuCard: {
+    position: "absolute",
+    right: 20,
+    top: 80,
+    bottom: 80,
+    width: "70%",
+    backgroundColor: "#FADDC8",
+    borderRadius: 32,
+    padding: 22,
+  },
+  menuTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: "#00000040",
+    marginVertical: 10,
+  },
+  menuItem: {
+    paddingVertical: 6,
+  },
+  menuText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  subMenuText: {
+    fontSize: 14,
+    color: "#475569",
+  },
+  logoutText: {
+    fontSize: 16,
+    color: "#B91C1C",
+    fontWeight: "700",
+  },
 });
