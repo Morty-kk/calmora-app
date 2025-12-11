@@ -3,12 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const ORANGE = "#F28C3A";
@@ -23,7 +23,7 @@ export default function PMEStep3() {
 
     if (time <= 0) {
       setRunning(false);
-      router.push("/pme_done");  // ⬅️ ينتقل لصفحة النهاية
+      router.push("/pme_done"); // صفحة النهاية
       return;
     }
 
@@ -45,7 +45,7 @@ export default function PMEStep3() {
 
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")} // ← الخلفية الجديدة
       style={styles.bg}
       resizeMode="cover"
     >
@@ -102,28 +102,33 @@ export default function PMEStep3() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
+
   container: {
     flex: 1,
     paddingTop: 60,
     alignItems: "center",
   },
+
   backBtn: {
     position: "absolute",
     top: 40,
     left: 20,
   },
+
   header: {
     fontSize: 24,
     fontWeight: "700",
     color: "#D17842",
     marginBottom: 6,
   },
+
   subtitle: {
     fontSize: 18,
     marginBottom: 20,
     textAlign: "center",
     paddingHorizontal: 20,
   },
+
   circle: {
     width: 220,
     height: 220,
@@ -134,6 +139,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffffaa",
   },
+
   innerCircle: {
     width: 170,
     height: 170,
@@ -141,32 +147,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
   timerText: {
     fontSize: 44,
     fontWeight: "800",
     color: "#222",
   },
+
   image: {
     width: 260,
     height: 260,
     marginTop: 30,
   },
+
   buttonsRow: {
     flexDirection: "row",
     marginTop: 30,
     gap: 16,
   },
+
   primaryBtn: {
     backgroundColor: "#F28C3A",
     paddingHorizontal: 28,
     paddingVertical: 10,
     borderRadius: 24,
   },
+
   primaryBtnText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
+
   secondaryBtn: {
     backgroundColor: "#ffffffdd",
     paddingHorizontal: 24,
@@ -175,10 +187,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F28C3A",
   },
+
   secondaryBtnText: {
     color: "#F28C3A",
     fontSize: 18,
     fontWeight: "700",
   },
 });
+
 

@@ -17,7 +17,7 @@ export default function PMESteps() {
   const [time, setTime] = useState(30);
   const [running, setRunning] = useState(false);
 
-  // كل ثانية نقص 1 طالما running = true
+  // عدّاد التايمر
   useEffect(() => {
     if (!running) return;
     if (time <= 0) return;
@@ -26,30 +26,26 @@ export default function PMESteps() {
       setTime((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    // تنظيف التايمر إذا تغيّر الشي أو طلعت من الشاشة
     return () => clearTimeout(id);
   }, [running, time]);
 
   const handleStartStop = () => {
     if (running) {
-      // إيقاف
       setRunning(false);
     } else {
-      // تشغيل (ولو كان 0 رجّعو لـ 30)
       if (time === 0) setTime(30);
       setRunning(true);
     }
   };
 
   const handleNext = () => {
-    // روح للخطوة الثانية
     setRunning(false);
     router.push("/pme_step2");
   };
 
   return (
     <ImageBackground
-      //source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")}  // ← الخلفية الجديدة
       style={styles.bg}
       resizeMode="cover"
     >
@@ -70,14 +66,14 @@ export default function PMESteps() {
           </View>
         </View>
 
-        {/* Image */}
+        {/* Main Image (zalama) */}
         <Image
           source={require("../../assets/relax.png")}
           resizeMode="contain"
           style={styles.image}
         />
 
-        {/* Buttons: Start/Stopp + Weiter */}
+        {/* Buttons */}
         <View style={styles.buttonsRow}>
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStartStop}>
             <Text style={styles.primaryBtnText}>
@@ -95,7 +91,9 @@ export default function PMESteps() {
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1 },
+  bg: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingTop: 60,
@@ -174,6 +172,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
 
 
 

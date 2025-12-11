@@ -1,7 +1,6 @@
 // app/registerpatient.tsx
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -25,33 +24,31 @@ export default function RegisterPatient() {
   const [agreed, setAgreed] = useState(false);
   const [showError, setShowError] = useState(false);
 
- const onRegister = async () => {
-  if (!agreed) {
-    setShowError(true);
-    return;
-  }
+  const onRegister = async () => {
+    if (!agreed) {
+      setShowError(true);
+      return;
+    }
 
-  setShowError(false);
+    setShowError(false);
 
-  // 📌 تخزين بيانات المستخدم محلياً
-  const userData = {
-    name: firstName + " " + lastName,
-    phone,
-    birthdate,
-    gender,
-    email,
+    const userData = {
+      name: firstName + " " + lastName,
+      phone,
+      birthdate,
+      gender,
+      email,
+    };
+
+    try {
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
+      console.log("Benutzer gespeichert:", userData);
+    } catch (e) {
+      console.error("Fehler beim Speichern", e);
+    }
+
+    router.push("/menu");
   };
-
-  try {
-    await AsyncStorage.setItem("user", JSON.stringify(userData));
-    console.log("Benutzer gespeichert:", userData);
-  } catch (e) {
-    console.error("Fehler beim Speichern", e);
-  }
-
-  router.push("/menu");
-};
-
 
   return (
     <ImageBackground
@@ -60,12 +57,19 @@ export default function RegisterPatient() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.container}>
+
+        {/* 🔙 زر الرجوع */}
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.push("/login-patient")}
+        >
+          <Ionicons name="arrow-back" size={30} color="#333" />
+        </TouchableOpacity>
+
         <Text style={styles.title}>registrieren</Text>
 
-        {/* 🚫 Tabs removed completely */}
-
-        {/* Form */}
         <View style={styles.form}>
+
           <TextInput
             style={styles.input}
             placeholder="Vorname"
@@ -82,6 +86,7 @@ export default function RegisterPatient() {
 
           {/* Gender */}
           <Text style={styles.label}>Geschlecht</Text>
+
           <View style={styles.genderRow}>
             <TouchableOpacity
               style={[styles.genderBox, gender === "m" && styles.genderSelected]}
@@ -112,6 +117,7 @@ export default function RegisterPatient() {
             </TouchableOpacity>
           </View>
 
+          {/* Birthday */}
           <View style={styles.inputWithIcon}>
             <TextInput
               style={styles.inputIconText}
@@ -122,6 +128,7 @@ export default function RegisterPatient() {
             <Ionicons name="calendar-outline" size={20} color="#8E8E8E" />
           </View>
 
+          {/* Phone */}
           <View style={styles.inputWithIcon}>
             <TextInput
               style={styles.inputIconText}
@@ -132,6 +139,7 @@ export default function RegisterPatient() {
             <Ionicons name="call-outline" size={20} color="#8E8E8E" />
           </View>
 
+          {/* Email */}
           <View style={styles.inputWithIcon}>
             <TextInput
               style={styles.inputIconText}
@@ -143,6 +151,7 @@ export default function RegisterPatient() {
             <Ionicons name="mail-outline" size={20} color="#8E8E8E" />
           </View>
 
+          {/* Password */}
           <View style={styles.inputWithIcon}>
             <TextInput
               style={styles.inputIconText}
@@ -173,7 +182,7 @@ export default function RegisterPatient() {
             </Text>
           </TouchableOpacity>
 
-          {/* Register */}
+          {/* Register button */}
           <TouchableOpacity
             style={[styles.registerBtn, !agreed && styles.registerBtnDisabled]}
             onPress={onRegister}
@@ -196,6 +205,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 30,
     paddingTop: 100,
+  },
+
+  /* 🔙 زر الرجوع */
+  backBtn: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 10,
   },
 
   title: {
@@ -313,3 +330,4 @@ const styles = StyleSheet.create({
     textTransform: "lowercase",
   },
 });
+

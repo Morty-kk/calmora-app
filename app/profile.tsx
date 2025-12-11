@@ -10,9 +10,11 @@ import {
   View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 
 export default function Profile() {
   const [editMode, setEditMode] = useState(false);
@@ -90,6 +92,15 @@ export default function Profile() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.container}>
+
+        {/* 🔙 BACK BUTTON */}
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.push("/menu")}
+        >
+          <Ionicons name="arrow-back" size={30} color="#333" />
+        </TouchableOpacity>
+
         <Text style={styles.header}>Profil</Text>
 
         {/* ===== PROFILE IMAGE ===== */}
@@ -124,6 +135,8 @@ export default function Profile() {
             style={[styles.input, !editMode && styles.disabledInput]}
             value={name}
             onChangeText={setName}
+            placeholder="Name"
+            placeholderTextColor="#999"
           />
 
           {/* Phone */}
@@ -134,6 +147,8 @@ export default function Profile() {
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
+            placeholder="Telefonnummer"
+            placeholderTextColor="#999"
           />
 
           {/* Birthdate */}
@@ -144,6 +159,7 @@ export default function Profile() {
             value={birthdate}
             onChangeText={setBirthdate}
             placeholder="DD.MM.YYYY"
+            placeholderTextColor="#999"
           />
 
           {/* Gender Picker */}
@@ -186,6 +202,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 150,
+  },
+
+  /* 🔙 BACK BUTTON */
+  backBtn: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 20,
   },
 
   header: {
@@ -276,6 +300,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 });
+
 
 
 

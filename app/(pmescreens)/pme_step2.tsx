@@ -39,12 +39,12 @@ export default function PMEStep2() {
 
   const handleNext = () => {
     setRunning(false);
-    router.push("/pme_step3"); // ← الخطوة التالية
+    router.push("/pme_step3");
   };
 
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")}  // ← الخلفية الجديدة
       style={styles.bg}
       resizeMode="cover"
     >
@@ -75,7 +75,7 @@ export default function PMEStep2() {
           style={styles.image}
         />
 
-        {/* BUTTONS: Start/Stop + Zurück + Weiter */}
+        {/* BUTTONS */}
         <View style={styles.buttonsRow}>
 
           {/* START / STOP */}
@@ -108,7 +108,9 @@ export default function PMEStep2() {
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1 },
+  bg: {
+    flex: 1,
+  },
 
   container: {
     flex: 1,
@@ -179,6 +181,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
   },
+
   primaryBtnText: {
     color: "#fff",
     fontSize: 18,
@@ -193,12 +196,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ORANGE,
   },
+
   secondaryBtnText: {
     color: ORANGE,
     fontSize: 18,
     fontWeight: "700",
   },
 });
+
 
 
 
