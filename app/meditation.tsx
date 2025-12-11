@@ -18,14 +18,26 @@ export default function MeditationIntro() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Meditation</Text>
-          <Text style={styles.headerSubtitle}>
-            Beruhigt den Geist, stärkt die Aufmerksamkeit und hilft dir,
-            abzuschalten.
-          </Text>
+        {/* Links: Back-Button + Titel/Untertitel */}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={22} color="#111827" />
+          </TouchableOpacity>
+
+          <View>
+            <Text style={styles.headerTitle}>Meditation</Text>
+            <Text style={styles.headerSubtitle}>
+              Beruhigt den Geist, stärkt die Aufmerksamkeit und hilft dir,
+              abzuschalten.
+            </Text>
+          </View>
         </View>
 
+        {/* Rechts: Profil-Icon */}
         <View style={styles.iconBubble}>
           <Ionicons name="person-circle-outline" size={32} color="#1F2933" />
         </View>
@@ -73,10 +85,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
   },
+
+  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     gap: 16,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flexShrink: 1,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 4,
+    backgroundColor: "rgba(255,255,255,0.9)",
   },
   headerTitle: {
     fontSize: 26,
@@ -100,6 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  /* CARD */
   card: {
     marginTop: 32,
     padding: 18,
@@ -133,6 +166,7 @@ const styles = StyleSheet.create({
     color: "#4B5563",
   },
 
+  /* PLAY TILE */
   playTile: {
     marginTop: 16,
     borderRadius: 18,

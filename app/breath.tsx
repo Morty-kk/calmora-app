@@ -1,5 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function BreathMenu() {
   const exercises = [
@@ -32,11 +39,26 @@ export default function BreathMenu() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={styles.title}>Was ist Atmung?</Text>
-        <Text style={styles.desc}>
-          Diese Übungen helfen dir, deinen Atem zu beruhigen und Stress abzubauen.
-        </Text>
+        {/* Header mit Back-Button */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={22} color="#111827" />
+          </TouchableOpacity>
 
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.title}>Was ist Atmung?</Text>
+            <Text style={styles.desc}>
+              Diese Übungen helfen dir, deinen Atem zu beruhigen und Stress
+              abzubauen.
+            </Text>
+          </View>
+        </View>
+
+        {/* Karten für Übungen */}
         {exercises.map((item) => (
           <View key={item.id} style={styles.card}>
             <View style={{ flex: 1 }}>
@@ -59,10 +81,44 @@ export default function BreathMenu() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  container: { padding: 20 },
-  title: { fontSize: 22, fontWeight: "600", marginTop: 30 },
-  desc: { fontSize: 14, color: "#333", marginVertical: 10, marginBottom: 20 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
 
+  /* HEADER */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  headerTextWrap: {
+    flexShrink: 1,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 4,
+    color: "#111827",
+  },
+  desc: {
+    fontSize: 14,
+    color: "#333",
+  },
+
+  /* KARTEN */
   card: {
     backgroundColor: "rgba(255,255,255,0.85)",
     padding: 15,
@@ -74,6 +130,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "600" },
   cardDesc: { fontSize: 13, color: "#666", marginTop: 4 },
 
+  /* BUTTON */
   btn: {
     backgroundColor: "#9E86B9",
     paddingVertical: 8,
@@ -82,4 +139,3 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
 });
-

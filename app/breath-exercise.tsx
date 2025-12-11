@@ -1,14 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Easing,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    Vibration,
-    View,
+  Animated,
+  Easing,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from "react-native";
 
 export default function BreathExercise() {
@@ -82,14 +83,12 @@ export default function BreathExercise() {
         Vibration.vibrate(60);
 
         animateColor("halten", exercise.hold);
-
       } else if (phase === "halten") {
         setPhase("ausatmen");
         setCounter(exercise.out);
 
         animateBreath(0.7, exercise.out);
         animateColor("aus", exercise.out);
-
       } else {
         setPhase("einatmen");
         setCounter(exercise.in);
@@ -104,13 +103,15 @@ export default function BreathExercise() {
 
   const startExercise = () => {
     setRunning(true);
+    setPhase("einatmen");
+    setCounter(exercise.in);
     animateBreath(1.2, exercise.in);
     animateColor("einatmen", exercise.in);
   };
 
   const endExercise = () => {
     setRunning(false);
-    router.back(); // يرجع للصفحة السابقة
+    router.back(); // zurück zur vorherigen Seite
   };
 
   return (
@@ -120,36 +121,55 @@ export default function BreathExercise() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={styles.title}>{exercise.title}</Text>
-
-        {/* Animated Circle */}
-        <Animated.View style={[styles.circle, { transform: [{ scale: scaleAnim }], backgroundColor: bgColor }]}>
-          <Text style={styles.phaseText}>
-            {phase === "einatmen" && "atme ein"}
-            {phase === "halten" && "halte"}
-            {phase === "ausatmen" && "atme aus"}
-          </Text>
-          <Text style={styles.time}>{counter}s</Text>
-        </Animated.View>
-
-        <View style={styles.buttons}>
-          <TouchableOpacity style={styles.startBtn} onPress={startExercise}>
-            <Text style={styles.btnTextWhite}>Start</Text>
-          </TouchableOpacity>
-
+        {/* Header mit Back-Button */}
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.pauseBtn}
-            onPress={() => setRunning(false)}
+            onPress={() => router.back()}
+            style={styles.backButton}
+            activeOpacity={0.7}
           >
-            <Text style={styles.btnTextWhite}>Pause</Text>
+            <Ionicons name="chevron-back" size={22} color="#111827" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.endBtn}
-            onPress={endExercise}
+          <Text style={styles.title}>{exercise.title}</Text>
+        </View>
+
+        {/* Inhalt zentriert */}
+        <View style={styles.content}>
+          {/* Animated Circle */}
+          <Animated.View
+            style={[
+              styles.circle,
+              {
+                transform: [{ scale: scaleAnim }],
+                backgroundColor: bgColor,
+              },
+            ]}
           >
-            <Text style={styles.btnTextWhite}>Beenden</Text>
-          </TouchableOpacity>
+            <Text style={styles.phaseText}>
+              {phase === "einatmen" && "atme ein"}
+              {phase === "halten" && "halte"}
+              {phase === "ausatmen" && "atme aus"}
+            </Text>
+            <Text style={styles.time}>{counter}s</Text>
+          </Animated.View>
+
+          <View style={styles.buttons}>
+            <TouchableOpacity style={styles.startBtn} onPress={startExercise}>
+              <Text style={styles.btnTextWhite}>Start</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.pauseBtn}
+              onPress={() => setRunning(false)}
+            >
+              <Text style={styles.btnTextWhite}>Pause</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.endBtn} onPress={endExercise}>
+              <Text style={styles.btnTextWhite}>Beenden</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ImageBackground>
@@ -158,9 +178,37 @@ export default function BreathExercise() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
 
-  title: { fontSize: 26, fontWeight: "600", marginBottom: 40 },
+  /* HEADER */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  title: { fontSize: 24, fontWeight: "600", color: "#111827" },
+
+  /* CONTENT */
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   circle: {
     width: 220,
@@ -203,7 +251,3 @@ const styles = StyleSheet.create({
 
   btnTextWhite: { color: "white", fontSize: 15, fontWeight: "600" },
 });
-
-
-
-

@@ -1,10 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function AchtsamkeitMenu() {
@@ -15,12 +16,24 @@ export default function AchtsamkeitMenu() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={styles.title}>Was ist Achtsamkeit?</Text>
+        {/* Header mit Back-Button */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={22} color="#111827" />
+          </TouchableOpacity>
 
-        <Text style={styles.desc}>
-          Achtsamkeit bedeutet, deine Gedanken, Gefühle und deinen Körper bewusst
-          wahrzunehmen.
-        </Text>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.title}>Was ist Achtsamkeit?</Text>
+            <Text style={styles.desc}>
+              Achtsamkeit bedeutet, deine Gedanken, Gefühle und deinen Körper
+              bewusst wahrzunehmen.
+            </Text>
+          </View>
+        </View>
 
         {/* 5-Sinnes-Check */}
         <View style={[styles.card, { backgroundColor: "#C9E9EA" }]}>
@@ -79,10 +92,36 @@ export default function AchtsamkeitMenu() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  container: { padding: 20, paddingTop: 40 },
-  title: { fontSize: 22, fontWeight: "600", marginBottom: 10 },
-  desc: { fontSize: 14, color: "#333", marginBottom: 20 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
 
+  /* HEADER */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  headerTextWrap: {
+    flexShrink: 1,
+  },
+  title: { fontSize: 22, fontWeight: "600", marginBottom: 4, color: "#111827" },
+  desc: { fontSize: 14, color: "#333" },
+
+  /* KARTEN */
   card: {
     padding: 18,
     borderRadius: 16,
@@ -94,10 +133,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-
   cardTitle: { fontSize: 18, fontWeight: "700", color: "#2B2B2B" },
   cardDesc: { fontSize: 13, color: "#3B3B3B", marginTop: 4 },
 
+  /* BUTTON */
   btn: {
     backgroundColor: "#ffffff",
     paddingVertical: 6,
@@ -108,5 +147,3 @@ const styles = StyleSheet.create({
   },
   btnText: { fontWeight: "700", color: "#9E86B9" },
 });
-
-
