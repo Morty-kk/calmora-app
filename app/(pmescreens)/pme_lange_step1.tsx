@@ -1,24 +1,27 @@
 // app/(pmescreens)/pme_lange_step1.tsx
-
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const ORANGE = "#F28C3A";
+
+// ⬅ responsive للتمييز بين الموبايل والويب
+const { width } = Dimensions.get("window");
+const isSmallScreen = width < 400;
 
 export default function PMELangeStep1() {
   const [time, setTime] = useState(45);
   const [running, setRunning] = useState(false);
 
-  // Countdown logic
   useEffect(() => {
     if (!running || time <= 0) return;
 
@@ -40,7 +43,7 @@ export default function PMELangeStep1() {
 
   const handleNext = () => {
     setRunning(false);
-    router.push("/pme_lange_step2"); 
+    router.push("/pme_lange_step2");
   };
 
   return (
@@ -50,50 +53,49 @@ export default function PMELangeStep1() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-
         {/* BACK BUTTON */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={32} color="#ffffff" />
         </TouchableOpacity>
 
-        {/* TITLE & TEXT */}
+        {/* TITLE */}
         <Text style={styles.header}>Hände & Unterarme</Text>
 
         <Text style={styles.subtitle_black}>
           Balle deine Hände zu Fäusten und halte die Spannung
         </Text>
 
-        {/* TIMER CIRCLE */}
-        <View style={styles.circle}>
-          <View style={styles.innerCircle}>
+        {/* TIMER CIRCLE — responsive */}
+        <View style={[styles.circle, isSmallScreen && styles.circleSmall]}>
+          <View
+            style={[
+              styles.innerCircle,
+              isSmallScreen && styles.innerCircleSmall,
+            ]}
+          >
             <Text style={styles.timerText}>{time}</Text>
           </View>
         </View>
 
-        {/* IMAGE */}
+        {/* IMAGE — responsive */}
         <Image
           source={require("../../assets/relax.png")}
           resizeMode="contain"
-          style={styles.image}
+          style={[styles.image, isSmallScreen && styles.imageSmall]}
         />
 
         {/* BUTTONS */}
         <View style={styles.buttonsRow}>
-
-          {/* START / STOP */}
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStartStop}>
             <Text style={styles.primaryBtnText}>
               {running ? "Stopp" : "Start"}
             </Text>
           </TouchableOpacity>
 
-          {/* WEITER */}
           <TouchableOpacity style={styles.secondaryBtn} onPress={handleNext}>
             <Text style={styles.secondaryBtnText}>Weiter</Text>
           </TouchableOpacity>
-
         </View>
-
       </View>
     </ImageBackground>
   );
@@ -115,7 +117,6 @@ const styles = StyleSheet.create({
     padding: 6,
   },
 
-  // 🔥 العنوان باللون البرتقالي مثل kurz
   header: {
     fontSize: 26,
     fontWeight: "700",
@@ -123,7 +124,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  // 🔥 الجملة تحتها باللون الأسود (مثل kurz)
   subtitle_black: {
     fontSize: 18,
     marginBottom: 20,
@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
+  /* الدائرة */
   circle: {
     width: 220,
     height: 220,
@@ -142,6 +143,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffffbb",
   },
+  circleSmall: {
+    width: 160,
+    height: 160,
+    borderRadius: 160,
+    borderWidth: 8,
+  },
 
   innerCircle: {
     width: 170,
@@ -149,6 +156,11 @@ const styles = StyleSheet.create({
     borderRadius: 170,
     justifyContent: "center",
     alignItems: "center",
+  },
+  innerCircleSmall: {
+    width: 120,
+    height: 120,
+    borderRadius: 120,
   },
 
   timerText: {
@@ -161,6 +173,11 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     marginTop: 30,
+  },
+  imageSmall: {
+    width: 150,
+    height: 150,
+    marginTop: 20,
   },
 
   buttonsRow: {

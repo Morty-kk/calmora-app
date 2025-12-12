@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   Image,
   ImageBackground,
   StyleSheet,
@@ -13,72 +14,76 @@ import {
 
 const ORANGE = "#F28C3A";
 
+const { width } = Dimensions.get("window");
+const isSmallScreen = width < 400;
+
 export default function PMEStep3() {
   const [time, setTime] = useState(30);
   const [running, setRunning] = useState(false);
 
-  // Countdown logic
   useEffect(() => {
     if (!running) return;
 
     if (time <= 0) {
       setRunning(false);
-      router.push("/pme_done"); // صفحة النهاية
+      router.push("/pme_done"); // ⬅️ لما يخلص التايمر يروح لصفحة النهاية
       return;
     }
 
-    const id = setTimeout(() => {
-      setTime((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
+    const id = setTimeout(() => setTime((prev) => prev - 1), 1000);
 
     return () => clearTimeout(id);
   }, [running, time]);
 
   const handleStartStop = () => {
-    if (running) {
-      setRunning(false);
-    } else {
+    if (running) setRunning(false);
+    else {
       if (time === 0) setTime(30);
       setRunning(true);
     }
   };
 
+  const finish = () => {
+    router.push("/pme_done"); // ⬅️ زر Fertig
+  };
+
   return (
     <ImageBackground
-      source={require("../../assets/Home_Design.jpg")} // ← الخلفية الجديدة
+      source={require("../../assets/Home_Design.jpg")}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.container}>
         
-        {/* Back Button */}
+        {/* BACK */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={30} color="#555" />
+          <Ionicons name="arrow-back" size={28} color="#555" />
         </TouchableOpacity>
 
-        {/* Title */}
         <Text style={styles.header}>Gesicht</Text>
         <Text style={styles.subtitle}>
           Spanne deine Gesichtsmuskeln an und halte die Spannung
         </Text>
 
-        {/* Timer Circle */}
-        <View style={styles.circle}>
-          <View style={styles.innerCircle}>
-            <Text style={styles.timerText}>{time}</Text>
+        {/* TIMER CIRCLE */}
+        <View style={[styles.circle, isSmallScreen && styles.circleSmall]}>
+          <View style={[styles.innerCircle, isSmallScreen && styles.innerCircleSmall]}>
+            <Text style={[styles.timerText, isSmallScreen && styles.timerTextSmall]}>
+              {time}
+            </Text>
           </View>
         </View>
 
-        {/* Image */}
+        {/* IMAGE */}
         <Image
           source={require("../../assets/relax.png")}
           resizeMode="contain"
-          style={styles.image}
+          style={[styles.image, isSmallScreen && styles.imageSmall]}
         />
 
-        {/* Buttons */}
+        {/* BUTTONS */}
         <View style={styles.buttonsRow}>
-
+          
           {/* START / STOP */}
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStartStop}>
             <Text style={styles.primaryBtnText}>
@@ -86,12 +91,9 @@ export default function PMEStep3() {
             </Text>
           </TouchableOpacity>
 
-          {/* BACK */}
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.secondaryBtnText}>Zurück</Text>
+          {/* FERTIG */}
+          <TouchableOpacity style={styles.secondaryBtn} onPress={finish}>
+            <Text style={styles.secondaryBtnText}>Fertig</Text>
           </TouchableOpacity>
 
         </View>
@@ -105,13 +107,13 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 45,
     alignItems: "center",
   },
 
   backBtn: {
     position: "absolute",
-    top: 40,
+    top: 30,
     left: 20,
   },
 
@@ -123,41 +125,62 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 20,
     textAlign: "center",
     paddingHorizontal: 20,
   },
 
+  /* TIMER */
   circle: {
     width: 220,
     height: 220,
-    borderRadius: 220,
-    borderWidth: 12,
+    borderRadius: 200,
+    borderWidth: 10,
     borderColor: ORANGE,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#ffffffaa",
   },
 
+  circleSmall: {
+    width: 160,
+    height: 160,
+    borderWidth: 8,
+  },
+
   innerCircle: {
     width: 170,
     height: 170,
-    borderRadius: 170,
+    borderRadius: 150,
     justifyContent: "center",
     alignItems: "center",
   },
 
+  innerCircleSmall: {
+    width: 120,
+    height: 120,
+  },
+
   timerText: {
-    fontSize: 44,
+    fontSize: 40,
     fontWeight: "800",
     color: "#222",
   },
 
+  timerTextSmall: {
+    fontSize: 32,
+  },
+
   image: {
-    width: 260,
-    height: 260,
-    marginTop: 30,
+    width: 240,
+    height: 240,
+    marginTop: 25,
+  },
+
+  imageSmall: {
+    width: 150,
+    height: 150,
   },
 
   buttonsRow: {
@@ -167,8 +190,8 @@ const styles = StyleSheet.create({
   },
 
   primaryBtn: {
-    backgroundColor: "#F28C3A",
-    paddingHorizontal: 28,
+    backgroundColor: ORANGE,
+    paddingHorizontal: 26,
     paddingVertical: 10,
     borderRadius: 24,
   },
@@ -185,14 +208,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#F28C3A",
+    borderColor: ORANGE,
   },
 
   secondaryBtnText: {
-    color: "#F28C3A",
+    color: ORANGE,
     fontSize: 18,
     fontWeight: "700",
   },
 });
+
+
 
 

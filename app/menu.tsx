@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -10,15 +11,7 @@ import {
 } from 'react-native';
 import BottomTabs from '../components/BottomTabs';
 
-function Tile({
-  title,
-  icon,
-  onPress,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  onPress?: () => void;
-}) {
+function Tile({ title, icon, onPress }: { title: string; icon: React.ReactNode; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} style={styles.tile}>
       <View style={{ alignItems: 'center', gap: 6 }}>
@@ -30,8 +23,53 @@ function Tile({
 }
 
 export default function Menu() {
-  const name = 'Karl';
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userName, setUserName] = useState("...");
+
+  // 🔥 الموعد القادم
+  const [appointment, setAppointment] = useState<{
+    date: string;
+    time: string;
+    name?: string;
+  } | null>(null);
+
+  // 📌 جلب اسم المستخدم + الموعد من AsyncStorage
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // جلب المستخدم
+        const storedUser = await AsyncStorage.getItem("user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setUserName(user.name || "Gast");
+        }
+
+        // جلب الموعد
+        const storedAppointment = await AsyncStorage.getItem("nextAppointment");
+        if (storedAppointment) {
+          setAppointment(JSON.parse(storedAppointment));
+        }
+      } catch (e) {
+        console.log("Fehler beim Laden:", e);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // 🔥 Logout
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("user");
+      await AsyncStorage.removeItem("nextAppointment");
+
+      setMenuOpen(false);
+
+      router.replace("/login-patient");
+    } catch (e) {
+      console.log("Logout Fehler:", e);
+    }
+  };
 
   return (
     <ImageBackground
@@ -40,6 +78,7 @@ export default function Menu() {
       resizeMode="cover"
     >
       <View style={styles.wrap}>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brand}>Calmora</Text>
@@ -49,19 +88,29 @@ export default function Menu() {
           </Pressable>
         </View>
 
+        {/* Greeting */}
         <Text style={styles.greeting}>
-          Hey {name}, wie schön,{'\n'}
+          Hey {userName}, wie schön,{'\n'}
           dass du da bist
         </Text>
+
         <View style={styles.divider} />
 
         {/* Reminder */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Remind:</Text>
-          <Text style={styles.cardText}>
-            Die nächste Sitzung:{' '}
-            <Text style={styles.cardStrong}>28.02.25, 09:30</Text>
-          </Text>
+
+          {appointment ? (
+            <Text style={styles.cardText}>
+              Die nächste Sitzung:{' '}
+              <Text style={styles.cardStrong}>
+                {appointment.date}, {appointment.time}
+              </Text>
+              {appointment.name ? ` (mit ${appointment.name})` : ""}
+            </Text>
+          ) : (
+            <Text style={styles.cardText}>Kein Termin geplant</Text>
+          )}
         </View>
 
         {/* Übungen */}
@@ -69,91 +118,57 @@ export default function Menu() {
         <View style={styles.grid}>
           <Tile
             title="Atmung"
-            icon={
-              <Ionicons name="leaf-outline" size={28} color="#2B2B2B" />
-            }
+            icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />}
             onPress={() => router.push('/breath')}
           />
 
           <Tile
             title="Achtsamkeit"
-            icon={
-              <MaterialCommunityIcons
-                name="meditation"
-                size={28}
-                color="#2B2B2B"
-              />
-            }
+            icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />}
             onPress={() => router.push('/achtsamkeit')}
           />
 
           <Tile
             title={'Progressive\nMuskelentspannung'}
-            icon={
-              <MaterialCommunityIcons
-                name="human-male-board"
-                size={28}
-                color="#2B2B2B"
-              />
-            }
+            icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
             onPress={() => router.push('/pme')}
           />
 
           <Tile
             title="Meditation"
-            icon={
-              <Ionicons
-                name="flower-outline"
-                size={28}
-                color="#2B2B2B"
-              />
-            }
+            icon={<Ionicons name="flower-outline" size={28} color="#2B2B2B" />}
             onPress={() => router.push('/meditation')}
           />
         </View>
 
         {/* Termin CTA */}
-        <Pressable
-          style={styles.apptBtn}
-          onPress={() => router.push('/appointment')}
-        >
+        <Pressable style={styles.apptBtn} onPress={() => router.push('/appointment')}>
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
         </Pressable>
 
-        {/* ✅ DON’T PANIC – jetzt über den Tabs */}
-        <Pressable
-          style={styles.panic}
-          onPress={() => router.push('/panic')}
-        >
+        {/* DON’T PANIC */}
+        <Pressable style={styles.panic} onPress={() => router.push('/panic')}>
           <Ionicons name="megaphone" size={22} color="#1f2937" />
           <Text style={styles.panicText}>
             DON’T{'\n'}PANIC
           </Text>
         </Pressable>
 
-        {/* Spacer für Content, Tabs bleiben unten */}
         <View style={{ flex: 1 }} />
 
-        {/* Bottom Tabs */}
         <BottomTabs />
       </View>
 
-      {/* Overlay-Menü */}
+      {/* MENU OVERLAY */}
       {menuOpen && (
         <View style={styles.menuOverlay}>
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setMenuOpen(false)}
-          />
+          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
 
           <View style={styles.menuCard}>
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => setMenuOpen(false)}
-            >
+            <Pressable style={styles.menuItem} onPress={() => setMenuOpen(false)}>
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
@@ -166,10 +181,7 @@ export default function Menu() {
                 <Text style={styles.subMenuText}>Sitzungen</Text>
               </Pressable>
 
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => router.push('/appointment')}
-              >
+              <Pressable style={styles.menuItem} onPress={() => router.push('/appointment')}>
                 <Text style={styles.subMenuText}>Termine</Text>
               </Pressable>
 
@@ -184,30 +196,22 @@ export default function Menu() {
               </Pressable>
             </View>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push('/profile')}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push('/profile')}>
               <Text style={styles.menuText}>Mein Profil</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push('/mindfulness')}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push('/mindfulness')}>
               <Text style={styles.menuText}>Übungen</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push('/diary')}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push('/diary')}>
               <Text style={styles.menuText}>Tagebuch</Text>
             </Pressable>
 
             <View style={styles.menuDivider} />
 
-            <Pressable style={styles.menuItem}>
+            {/* LOGOUT */}
+            <Pressable style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.logoutText}>abmelden</Text>
             </Pressable>
           </View>
@@ -220,18 +224,21 @@ export default function Menu() {
 const styles = StyleSheet.create({
   bg: { flex: 1 },
   wrap: { flex: 1, padding: 16, paddingBottom: 120 },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   brand: { fontSize: 20, fontWeight: '700', opacity: 0.85, color: '#2B2B2B' },
+
   greeting: {
     fontSize: 18,
     fontWeight: '700',
     color: '#3b4b7a',
     marginTop: 8,
   },
+
   divider: { height: 1, backgroundColor: '#00000022', marginVertical: 12 },
 
   card: {
@@ -245,7 +252,9 @@ const styles = StyleSheet.create({
   cardStrong: { fontWeight: '800' },
 
   sectionTitle: { fontSize: 20, fontWeight: '800', marginVertical: 10 },
+
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+
   tile: {
     width: '47%',
     backgroundColor: '#F8E3D7',
@@ -263,7 +272,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 14,
-    zIndex: 2,
   },
   apptBtnText: { fontWeight: '700', color: '#111827' },
 
@@ -284,7 +292,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
 
-  // Menü
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -303,30 +310,16 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: 22,
   },
-  menuTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#00000040',
-    marginVertical: 10,
-  },
-  menuItem: {
-    paddingVertical: 6,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#111827',
-  },
-  subMenuText: {
-    fontSize: 14,
-    color: '#475569',
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#B91C1C',
-    fontWeight: '700',
-  },
+
+  menuTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  menuDivider: { height: 1, backgroundColor: '#00000040', marginVertical: 10 },
+
+  menuItem: { paddingVertical: 6 },
+
+  menuText: { fontSize: 16, color: '#111827' },
+  subMenuText: { fontSize: 14, color: '#475569' },
+
+  logoutText: { fontSize: 16, color: '#B91C1C', fontWeight: '700' },
 });
+
+

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   Image,
   ImageBackground,
   StyleSheet,
@@ -13,6 +14,9 @@ import {
 } from "react-native";
 
 const ORANGE = "#F28C3A";
+
+const { width } = Dimensions.get("window");
+const isSmallScreen = width < 400;
 
 export default function PMELangeStep3() {
   const [time, setTime] = useState(45);
@@ -33,14 +37,14 @@ export default function PMELangeStep3() {
     if (running) {
       setRunning(false);
     } else {
-      if (time === 0) setTime(30);
+      if (time === 0) setTime(45);
       setRunning(true);
     }
   };
 
   const handleNext = () => {
     setRunning(false);
-    router.push("/pme_lange_step4"); // الخطوة الرابعة
+    router.push("/pme_lange_step4");
   };
 
   return (
@@ -63,9 +67,11 @@ export default function PMELangeStep3() {
         </Text>
 
         {/* TIMER */}
-        <View style={styles.circle}>
-          <View style={styles.innerCircle}>
-            <Text style={styles.timerText}>{time}</Text>
+        <View style={[styles.circle, isSmallScreen && styles.circleSmall]}>
+          <View style={[styles.innerCircle, isSmallScreen && styles.innerCircleSmall]}>
+            <Text style={[styles.timerText, isSmallScreen && styles.timerTextSmall]}>
+              {time}
+            </Text>
           </View>
         </View>
 
@@ -73,19 +79,15 @@ export default function PMELangeStep3() {
         <Image
           source={require("../../assets/relax.png")}
           resizeMode="contain"
-          style={styles.image}
+          style={[styles.image, isSmallScreen && styles.imageSmall]}
         />
 
         {/* BUTTONS */}
         <View style={styles.buttonsRow}>
-          {/* START / STOP */}
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStartStop}>
-            <Text style={styles.primaryBtnText}>
-              {running ? "Stopp" : "Start"}
-            </Text>
+            <Text style={styles.primaryBtnText}>{running ? "Stopp" : "Start"}</Text>
           </TouchableOpacity>
 
-          {/* WEITER */}
           <TouchableOpacity style={styles.secondaryBtn} onPress={handleNext}>
             <Text style={styles.secondaryBtnText}>Weiter</Text>
           </TouchableOpacity>
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#D17842", // نفس البرتقاني تبع kurz
+    color: "#D17842",
     marginBottom: 6,
   },
 
@@ -124,9 +126,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     paddingHorizontal: 20,
-    color: "#222", // أسود
+    color: "#222",
   },
 
+  /* --- TIMER CIRCLE --- */
   circle: {
     width: 220,
     height: 220,
@@ -137,6 +140,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffffcc",
   },
+  circleSmall: {
+    width: 160,
+    height: 160,
+    borderRadius: 160,
+    borderWidth: 8,
+  },
 
   innerCircle: {
     width: 170,
@@ -145,19 +154,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  innerCircleSmall: {
+    width: 120,
+    height: 120,
+    borderRadius: 120,
+  },
 
   timerText: {
     fontSize: 44,
     fontWeight: "800",
     color: "#222",
   },
+  timerTextSmall: {
+    fontSize: 34,
+  },
 
+  /* --- IMAGE --- */
   image: {
     width: 260,
     height: 260,
     marginTop: 30,
   },
+  imageSmall: {
+    width: 150,
+    height: 150,
+    marginTop: 20,
+  },
 
+  /* --- BUTTONS --- */
   buttonsRow: {
     flexDirection: "row",
     marginTop: 30,
@@ -170,6 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
   },
+
   primaryBtnText: {
     color: "#fff",
     fontSize: 18,
@@ -184,9 +209,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ORANGE,
   },
+
   secondaryBtnText: {
     color: ORANGE,
     fontSize: 18,
     fontWeight: "700",
   },
 });
+

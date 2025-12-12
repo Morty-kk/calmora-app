@@ -1,53 +1,61 @@
+// app/(pmescreens)/pme_done.tsx
+
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React from "react";
 import {
-    Image,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function PMEDone() {
   return (
     <ImageBackground
-      source={require("../../assets/relax.png")}
+      source={require("../../assets/Home_Design.jpg")}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.container}>
-
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/pme")}>
-          <Ionicons name="arrow-back" size={30} color="#444" />
+        
+        {/* BACK BUTTON */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={30} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Geschafft!</Text>
+        {/* TITLE */}
+        <Text style={styles.header}>Gut gemacht!</Text>
 
-        <Text style={styles.text}>
-          Super gemacht! Du hast die kurze{"\n"}
-          PME-Variante erfolgreich beendet.
+        {/* SUBTEXT */}
+        <Text style={styles.subtitle}>
+          Du hast die kurze PME erfolgreich abgeschlossen.
         </Text>
 
+        {/* IMAGE */}
         <Image
           source={require("../../assets/relax.png")}
-          style={styles.image}
           resizeMode="contain"
+          style={styles.image}
         />
 
+        {/* BUTTONS */}
         <TouchableOpacity
           style={styles.primaryBtn}
           onPress={() => router.push("/pme")}
         >
-          <Text style={styles.primaryText}>Zur Übersicht</Text>
+          <Text style={styles.primaryBtnText}>Zurück zur Übersicht</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.secondaryBtn}
           onPress={() => router.push("/pme_steps")}
         >
-          <Text style={styles.secondaryText}>Erneut starten</Text>
+          <Text style={styles.secondaryBtnText}>Erneut starten</Text>
         </TouchableOpacity>
+
       </View>
     </ImageBackground>
   );
@@ -55,57 +63,73 @@ export default function PMEDone() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
+
   container: {
     flex: 1,
-    paddingTop: 80,
     alignItems: "center",
+    paddingTop: 80,
   },
+
   backBtn: {
     position: "absolute",
     top: 40,
     left: 20,
   },
-  title: {
+
+  header: {
     fontSize: 28,
-    fontWeight: "800",
-    color: "#D17842",
-    marginBottom: 10,
+    fontWeight: "900",
+    color: "#F28C3A",
+    marginBottom: 8,
+    textAlign: "center",
   },
-  text: {
-    fontSize: 17,
+
+  subtitle: {
+    fontSize: 18,
     textAlign: "center",
     marginBottom: 20,
-    color: "#333",
+    paddingHorizontal: 20,
+    color: "#000",
   },
+
   image: {
     width: 260,
     height: 260,
-    marginVertical: 20,
+    marginBottom: 40,
   },
+
   primaryBtn: {
     backgroundColor: "#F28C3A",
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginTop: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    marginBottom: 20,
+    width: "80%",
+    alignItems: "center",
   },
-  primaryText: {
+
+  primaryBtnText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
+
   secondaryBtn: {
-    backgroundColor: "#ffffffdd",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
-    borderWidth: 1,
+    backgroundColor: "#ffffffcc",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    borderWidth: 2,
     borderColor: "#F28C3A",
-    marginTop: 12,
+    width: "80%",
+    alignItems: "center",
   },
-  secondaryText: {
+
+  secondaryBtnText: {
     color: "#F28C3A",
     fontSize: 18,
     fontWeight: "700",
   },
 });
+
+

@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   Image,
   ImageBackground,
   StyleSheet,
@@ -13,14 +14,15 @@ import {
 
 const ORANGE = "#F28C3A";
 
+const { width } = Dimensions.get("window");
+const isSmallScreen = width < 400; // شاشة موبايل صغيرة
+
 export default function PMESteps() {
   const [time, setTime] = useState(30);
   const [running, setRunning] = useState(false);
 
-  // عدّاد التايمر
   useEffect(() => {
-    if (!running) return;
-    if (time <= 0) return;
+    if (!running || time <= 0) return;
 
     const id = setTimeout(() => {
       setTime((prev) => (prev > 0 ? prev - 1 : 0));
@@ -45,32 +47,35 @@ export default function PMESteps() {
 
   return (
     <ImageBackground
-      source={require("../../assets/Home_Design.jpg")}  // ← الخلفية الجديدة
+      source={require("../../assets/Home_Design.jpg")}
       style={styles.bg}
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Back */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={30} color="#555" />
+          <Ionicons name="arrow-back" size={28} color="#555" />
         </TouchableOpacity>
 
-        {/* Title */}
         <Text style={styles.header}>Hände & Unterarme</Text>
         <Text style={styles.subtitle}>Balle deine Hände zu Fäusten</Text>
 
-        {/* Timer circle */}
-        <View style={styles.circle}>
-          <View style={styles.innerCircle}>
+        {/* ⬇ تصغير الدائرة حسب حجم الشاشة */}
+        <View style={[styles.circle, isSmallScreen && styles.circleSmall]}>
+          <View
+            style={[
+              styles.innerCircle,
+              isSmallScreen && styles.innerCircleSmall,
+            ]}
+          >
             <Text style={styles.timerText}>{time}</Text>
           </View>
         </View>
 
-        {/* Main Image (zalama) */}
+        {/* ⬇ تصغير صورة الزلمة على الموبايل */}
         <Image
           source={require("../../assets/relax.png")}
           resizeMode="contain"
-          style={styles.image}
+          style={[styles.image, isSmallScreen && styles.imageSmall]}
         />
 
         {/* Buttons */}
@@ -91,87 +96,120 @@ export default function PMESteps() {
 }
 
 const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-  },
+  bg: { flex: 1 },
+
   container: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 40,
     alignItems: "center",
   },
+
   backBtn: {
     position: "absolute",
-    top: 40,
+    top: 30,
     left: 20,
   },
+
   header: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     color: "#D17842",
-    marginBottom: 6,
+    marginTop: 20,
   },
+
   subtitle: {
-    fontSize: 18,
-    marginBottom: 20,
+    fontSize: 16,
+    marginBottom: 15,
     textAlign: "center",
   },
+
+  // الدائرة الأساسية
   circle: {
     width: 220,
     height: 220,
     borderRadius: 220,
-    borderWidth: 12,
+    borderWidth: 10,
     borderColor: ORANGE,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#ffffffaa",
   },
+
+  // ⬇ الدائرة المصغرة للموبايل
+  circleSmall: {
+    width: 160,
+    height: 160,
+    borderRadius: 160,
+  },
+
   innerCircle: {
-    width: 170,
-    height: 170,
-    borderRadius: 170,
+    width: 160,
+    height: 160,
+    borderRadius: 160,
     justifyContent: "center",
     alignItems: "center",
   },
+
+  innerCircleSmall: {
+    width: 120,
+    height: 120,
+    borderRadius: 120,
+  },
+
   timerText: {
-    fontSize: 44,
+    fontSize: 40,
     fontWeight: "800",
     color: "#222",
   },
+
+  // الصورة الأساسية
   image: {
-    width: 260,
-    height: 260,
-    marginTop: 30,
+    width: 240,
+    height: 240,
+    marginTop: 20,
   },
+
+  // ⬇ الصورة المصغرة
+  imageSmall: {
+    width: 160,
+    height: 160,
+  },
+
   buttonsRow: {
     flexDirection: "row",
-    marginTop: 30,
-    gap: 16,
+    marginTop: 25,
+    gap: 14,
   },
+
   primaryBtn: {
     backgroundColor: "#F28C3A",
-    paddingHorizontal: 28,
+    paddingHorizontal: 26,
     paddingVertical: 10,
     borderRadius: 24,
   },
+
   primaryBtnText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
+
   secondaryBtn: {
     backgroundColor: "#ffffffdd",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "#F28C3A",
   },
+
   secondaryBtnText: {
     color: "#F28C3A",
     fontSize: 18,
     fontWeight: "700",
   },
 });
+
 
 
 

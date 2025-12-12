@@ -20,10 +20,7 @@ export default function SinnesCheck() {
 
   const [step, setStep] = useState(0);
 
-  // Fade animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Pulse circle animation
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -44,7 +41,7 @@ export default function SinnesCheck() {
   const next = () => {
     fadeAnim.setValue(0);
     if (step < blocks.length - 1) setStep(step + 1);
-    else router.back();
+    else router.push("/achtsamkeit-5sinne_done"); // ← صفحة النهاية
   };
 
   const b = blocks[step];
@@ -57,7 +54,7 @@ export default function SinnesCheck() {
     >
       <View style={styles.container}>
 
-        {/* Progress Dots */}
+        {/* Progress dots */}
         <View style={styles.dotsContainer}>
           {blocks.map((_, i) => (
             <View
@@ -67,26 +64,19 @@ export default function SinnesCheck() {
           ))}
         </View>
 
-        {/* Pulse Circle */}
+        {/* Pulse circle */}
         <Animated.View
-          style={[
-            styles.circle,
-            { transform: [{ scale: pulse }] },
-          ]}
+          style={[styles.circle, { transform: [{ scale: pulse }] }]}
         />
 
-        {/* Animated Content */}
+        {/* Animated content */}
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.blockTitle}>{b.title}</Text>
           <Text style={styles.blockText}>{b.text}</Text>
 
           <View style={styles.btnContainer}>
             {b.buttons.map((label, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.button}
-                onPress={next}
-              >
+              <TouchableOpacity key={i} style={styles.button} onPress={next}>
                 <Text style={styles.btnText}>{label}</Text>
               </TouchableOpacity>
             ))}
@@ -99,33 +89,34 @@ export default function SinnesCheck() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
+
   container: {
     flex: 1,
-    padding: 20,
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
 
-  // Progress dots
   dotsContainer: {
     flexDirection: "row",
     position: "absolute",
     top: 60,
     gap: 8,
   },
+
   dot: {
     width: 10,
     height: 10,
-    backgroundColor: "#ffffff70",
     borderRadius: 50,
-  },
-  activeDot: {
-    backgroundColor: "#fff",
-    width: 12,
-    height: 12,
+    backgroundColor: "#ffffff70",
   },
 
-  // Pulse circle
+  activeDot: {
+    width: 12,
+    height: 12,
+    backgroundColor: "#fff",
+  },
+
   circle: {
     width: 260,
     height: 260,
@@ -142,24 +133,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
+
   blockText: {
     fontSize: 20,
     color: "#222",
     textAlign: "center",
     marginBottom: 40,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
 
-  btnContainer: { flexDirection: "row", justifyContent: "center", gap: 12 },
+  btnContainer: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "center",
+  },
+
   button: {
     backgroundColor: "#9E86B9",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    minWidth: 100,
+    minWidth: 110,
     alignItems: "center",
   },
-  btnText: { color: "white", fontWeight: "700", fontSize: 16 },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
+
 
 
