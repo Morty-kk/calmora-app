@@ -26,7 +26,7 @@ export default function PatientLogin() {
       return;
     }
     // TODO: echte Auth integrieren; bei Erfolg:
-    router.replace("/home"); // Patient-Home nach Login
+    router.replace("/menu"); // Patient-Home nach Login
   };
 
   return (

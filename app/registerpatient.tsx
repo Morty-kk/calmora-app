@@ -58,7 +58,7 @@ export default function RegisterPatient() {
     >
       <ScrollView contentContainerStyle={styles.container}>
 
-        {/* 🔙 زر الرجوع */}
+        
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.push("/login-patient")}
