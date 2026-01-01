@@ -1,29 +1,85 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-type Patient = {
+import { Appointment, api as apptApi } from "./appointmentsApi";
+import { PATIENTS, Patient } from "./patientsApi";
+
+type PatientRow = {
   id: string;
   name: string;
   sub: string;
 };
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function parseISODateTime(date: string, time: string) {
+  // "YYYY-MM-DD" + "HH:MM"
+  return new Date(`${date}T${time}:00`);
+}
+
+function diffDays(from: Date, to: Date) {
+  const a = startOfDay(from).getTime();
+  const b = startOfDay(to).getTime();
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function makeSubForPatient(patientName: string, appts: Appointment[], now: Date) {
+  const list = appts
+    .filter((a) => a.patientId === patientName)
+    .sort((a, b) => {
+      const da = `${a.date}T${a.time}`;
+      const db = `${b.date}T${b.time}`;
+      return da.localeCompare(db);
+    });
+
+  if (list.length === 0) return "";
+
+  const upcoming = list.find((a) => parseISODateTime(a.date, a.time) >= now);
+  if (upcoming) {
+    const days = diffDays(now, parseISODateTime(upcoming.date, upcoming.time));
+    const dTxt = days === 1 ? "Tag" : "Tagen";
+    return `Nächster Termin in ${days} ${dTxt}`;
+  }
+
+  const last = list[list.length - 1];
+  const daysAgo = Math.abs(diffDays(parseISODateTime(last.date, last.time), now));
+  const dTxt = daysAgo === 1 ? "Tag" : "Tagen";
+  return `Letzter Termin vor ${daysAgo} ${dTxt}`;
+}
+
 export default function TherapistPatients() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const patients: Patient[] = useMemo(
-    () => [
-      { id: "1", name: "Karl Heinz", sub: "Letztes Termin vor 10 tagen" },
-      { id: "2", name: "Jürgen Hoffner", sub: "Nächstes Termin in 15 tagen" },
-      { id: "3", name: "Lukas Schneider", sub: "Letztes Termin 5 Tagen" },
-      { id: "4", name: "Lea Wagner", sub: "Nächstes von 5 Tagen" },
-      { id: "5", name: "Johanna Fischer", sub: "Letztes Termin vor 55 Tagen" },
-      { id: "6", name: "Thomas Müller", sub: "Nächstes Termin in 10" },
-      { id: "7", name: "Nico Stein", sub: "" },
-    ],
-    []
-  );
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await apptApi.fetchAppointments();
+        setAppointments(data);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const patients: PatientRow[] = useMemo(() => {
+    const now = new Date();
+
+    return PATIENTS.map((p: Patient) => ({
+      id: p.id,
+      name: p.name,
+      sub: makeSubForPatient(p.name, appointments, now),
+    }));
+  }, [appointments]);
 
   const go = (path: string) => {
     setMenuOpen(false);
@@ -32,10 +88,8 @@ export default function TherapistPatients() {
 
   return (
     <View style={styles.container}>
-      {/* Brand */}
       <Text style={styles.brand}>Calmora</Text>
 
-      {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>Patientenliste</Text>
 
@@ -46,25 +100,35 @@ export default function TherapistPatients() {
 
       <View style={styles.divider} />
 
-      {/* List */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        {patients.map((p) => (
-          <Pressable
-            key={p.id}
-            style={styles.row}
-            onPress={() => router.push({ pathname: "/patientenakte", params: { name: p.name } })}
-          >
-            <View style={styles.avatar} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{p.name}</Text>
-              {!!p.sub && <Text style={styles.sub}>{p.sub}</Text>}
-            </View>
-          </Pressable>
-        ))}
+        {loading ? (
+          <View style={styles.loadingBox}>
+            <Text style={styles.loadingText}>Lade Patienten & Termine...</Text>
+          </View>
+        ) : (
+          patients.map((p) => (
+            <Pressable
+              key={p.id}
+              style={styles.row}
+              onPress={() =>
+                router.push({
+                  pathname: "/patientenakte",
+                  params: { id: p.id }, 
+                })
+              }
+            >
+              <View style={styles.avatar} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{p.name}</Text>
+                {!!p.sub && <Text style={styles.sub}>{p.sub}</Text>}
+              </View>
+            </Pressable>
+          ))
+        )}
+
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Bottom Tabs */}
       <View style={styles.tabs}>
         <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
           <Ionicons name="home-outline" size={22} color="#111" />
@@ -87,7 +151,6 @@ export default function TherapistPatients() {
         </Pressable>
       </View>
 
-      {/* Menu Drawer (wie auf Home) */}
       <Modal transparent visible={menuOpen} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
           <Pressable style={styles.drawer} onPress={() => {}}>
@@ -102,14 +165,13 @@ export default function TherapistPatients() {
               <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/appointment")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
               <Text style={styles.menuText}>Chat</Text>
             </Pressable>
-
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
               <Text style={styles.menuText}>Mein Profil</Text>
@@ -170,6 +232,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
+  loadingBox: {
+    marginTop: 18,
+    marginHorizontal: 22,
+    backgroundColor: "#E5E5E5",
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+  },
+  loadingText: { fontWeight: "800", color: "#111" },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -218,7 +290,6 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontWeight: "600", color: "#111", opacity: 0.85 },
   tabTextActive: { fontSize: 12, fontWeight: "800", color: "#111" },
 
-  /* MENU */
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",

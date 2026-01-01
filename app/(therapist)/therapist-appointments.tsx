@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { api, Appointment } from "./appointmentsApi";
-
+import { getPatientById, PATIENTS } from "./patientsApi";
 
 type MonthDef = {
   name: string;
@@ -27,7 +27,7 @@ type EditDraft = {
   id?: string;
   date: string;
   time: string;
-  patient: string;
+  patientId: string; // ✅ بدل patient (name)
   note: string;
 };
 
@@ -94,7 +94,9 @@ function DayCell({
           !hasAppointments && isToday ? styles.circleToday : null,
         ]}
       >
-        <Text style={hasAppointments ? styles.dayTextFilled : styles.dayText}>{day}</Text>
+        <Text style={hasAppointments ? styles.dayTextFilled : styles.dayText}>
+          {day}
+        </Text>
       </View>
     </Pressable>
   );
@@ -162,28 +164,23 @@ export default function TherapistAppointments() {
   // ✅ read query param ?date=YYYY-MM-DD
   const params = useLocalSearchParams<{ date?: string }>();
 
-  // Async backend stage
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // Day details modal
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Add/Edit modal
   const [editorOpen, setEditorOpen] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
   const [draft, setDraft] = useState<EditDraft>({
     date: "2026-01-01",
     time: "10:00",
-    patient: "",
+    patientId: "",
     note: "",
   });
 
-  
   const year = 2026;
 
- 
   const todayISO = useMemo(() => {
     const d = new Date();
     const y = d.getFullYear();
@@ -191,7 +188,6 @@ export default function TherapistAppointments() {
     const day = pad2(d.getDate());
     return `${y}-${m}-${day}`;
   }, []);
-
 
   const months: MonthDef[] = useMemo(() => {
     const list = Array.from({ length: 12 }, (_, i) => i); // 0..11
@@ -205,7 +201,6 @@ export default function TherapistAppointments() {
     }));
   }, [year]);
 
-  // Load appointments async
   useEffect(() => {
     (async () => {
       try {
@@ -237,7 +232,7 @@ export default function TherapistAppointments() {
 
   const openAdd = (date: string) => {
     setEditMode("add");
-    setDraft({ date, time: "10:00", patient: "", note: "" });
+    setDraft({ date, time: "10:00", patientId: "", note: "" });
     setEditorOpen(true);
   };
 
@@ -247,21 +242,21 @@ export default function TherapistAppointments() {
       id: appt.id,
       date: appt.date,
       time: appt.time,
-      patient: appt.patient,
+      patientId: appt.patientId,
       note: appt.note ?? "",
     });
     setEditorOpen(true);
   };
 
   const saveDraft = async () => {
-    if (!draft.patient.trim()) return;
+    if (!draft.patientId.trim()) return;
     if (!draft.time.trim()) return;
 
     if (editMode === "add") {
       const created = await api.createAppointment({
         date: draft.date,
         time: draft.time,
-        patient: draft.patient.trim(),
+        patientId: draft.patientId.trim(),
         note: draft.note.trim() || undefined,
       });
       setAppointments((prev) => [...prev, created]);
@@ -270,7 +265,7 @@ export default function TherapistAppointments() {
       const updated = await api.updateAppointment(draft.id, {
         date: draft.date,
         time: draft.time,
-        patient: draft.patient.trim(),
+        patientId: draft.patientId.trim(),
         note: draft.note.trim() || undefined,
       });
       setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
@@ -284,7 +279,6 @@ export default function TherapistAppointments() {
     setAppointments((prev) => prev.filter((a) => a.id !== id));
   };
 
- 
   useEffect(() => {
     if (params.date) {
       setSelectedDate(params.date);
@@ -294,9 +288,7 @@ export default function TherapistAppointments() {
 
   return (
     <View style={styles.container}>
-      {/* Scroll area */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* Top row */}
         <View style={styles.topRow}>
           <Pressable
             onPress={() => router.replace("/therapist-home")}
@@ -318,7 +310,6 @@ export default function TherapistAppointments() {
           </Pressable>
         </View>
 
-        {/* Loading */}
         {loading ? (
           <View style={styles.loadingBox}>
             <Text style={styles.loadingText}>Lade Termine...</Text>
@@ -384,25 +375,28 @@ export default function TherapistAppointments() {
             {selectedDate && appointmentsForSelectedDay.length === 0 ? (
               <Text style={styles.detailsEmpty}>Keine Termine an diesem Tag.</Text>
             ) : (
-              appointmentsForSelectedDay.map((a) => (
-                <View key={a.id} style={styles.apptRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.apptTime}>{a.time}</Text>
-                    <Text style={styles.apptPatient}>{a.patient}</Text>
-                    {!!a.note && <Text style={styles.apptNote}>{a.note}</Text>}
-                  </View>
+              appointmentsForSelectedDay.map((a) => {
+                const patientName = getPatientById(a.patientId)?.name ?? "Unbekannter Patient";
+                return (
+                  <View key={a.id} style={styles.apptRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.apptTime}>{a.time}</Text>
+                      <Text style={styles.apptPatient}>{patientName}</Text>
+                      {!!a.note && <Text style={styles.apptNote}>{a.note}</Text>}
+                    </View>
 
-                  <View style={styles.apptActions}>
-                    <Pressable onPress={() => openEdit(a)} hitSlop={10}>
-                      <Ionicons name="pencil" size={18} color="#111" />
-                    </Pressable>
+                    <View style={styles.apptActions}>
+                      <Pressable onPress={() => openEdit(a)} hitSlop={10}>
+                        <Ionicons name="pencil" size={18} color="#111" />
+                      </Pressable>
 
-                    <Pressable onPress={() => deleteAppt(a.id)} hitSlop={10}>
-                      <Ionicons name="trash" size={18} color="#B00000" />
-                    </Pressable>
+                      <Pressable onPress={() => deleteAppt(a.id)} hitSlop={10}>
+                        <Ionicons name="trash" size={18} color="#B00000" />
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              ))
+                );
+              })
             )}
 
             <Pressable style={styles.addBtn} onPress={() => selectedDate && openAdd(selectedDate)}>
@@ -442,14 +436,35 @@ export default function TherapistAppointments() {
               />
             </View>
 
+            {/* ✅ Patient selection */}
             <View style={styles.formField}>
               <Text style={styles.formLabel}>Patient</Text>
-              <TextInput
-                style={styles.formInput}
-                value={draft.patient}
-                onChangeText={(t) => setDraft((p) => ({ ...p, patient: t }))}
-                placeholder="Name"
-              />
+
+              <View style={{ gap: 8 }}>
+                {PATIENTS.map((p) => {
+                  const selected = draft.patientId === p.id;
+                  return (
+                    <Pressable
+                      key={p.id}
+                      onPress={() => setDraft((prev) => ({ ...prev, patientId: p.id }))}
+                      style={[
+                        styles.formInput,
+                        {
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        },
+                        selected ? { borderWidth: 2, borderColor: "#111" } : null,
+                      ]}
+                    >
+                      <Text style={{ fontWeight: "800", color: "#111" }}>{p.name}</Text>
+                      {selected ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#111" />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
 
             <View style={styles.formField}>
@@ -595,7 +610,6 @@ const styles = StyleSheet.create({
 
   circleFilled: { backgroundColor: "#c40000" },
 
-  // ✅ دائرة لليوم الحالي إذا ما فيه موعد
   circleToday: {
     borderWidth: 2,
     borderColor: "#111",

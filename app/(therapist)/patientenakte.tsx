@@ -9,35 +9,17 @@ import {
   Text,
   View,
 } from "react-native";
-
-type PatientData = {
-  name: string;
-  gender: string;
-  age: string;
-  dob: string;
-  email: string;
-  phone: string;
-  registered: string;
-};
+import { getPatientById } from "./patientsApi";
 
 export default function Patientenakte() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const params = useLocalSearchParams<{ name?: string }>();
 
-  const name = params.name ?? "Karl Heinz";
+  const params = useLocalSearchParams<{ id?: string; patientId?: string }>();
+  const patientId = (params.patientId ?? params.id ?? "p1") as string;
 
-  const patient: PatientData = useMemo(() => {
-    const safe = name.replace(/\s+/g, ".").toLowerCase();
-    return {
-      name,
-      gender: "Männlich",
-      age: "28 Jahre alt",
-      dob: "DD MM YYYY",
-      email: `${safe}@gmail.com`,
-      phone: "+49 0171 583429",
-      registered: "Registriert seit dem 27.07.2024",
-    };
-  }, [name]);
+  const patient = useMemo(() => {
+    return getPatientById(patientId) ?? getPatientById("p1")!;
+  }, [patientId]);
 
   const go = (path: string) => {
     setMenuOpen(false);
@@ -55,9 +37,23 @@ export default function Patientenakte() {
 
         {/* Header */}
         <View style={styles.headerRow}>
+          {/* ⬅️ Back */}
+          <Pressable
+            onPress={() => router.replace("/therapist-patients")}
+            hitSlop={10}
+            style={styles.iconBtn}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </Pressable>
+
           <Text style={styles.title}>Patientenakte</Text>
 
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+          {/* Menu */}
+          <Pressable
+            onPress={() => setMenuOpen(true)}
+            hitSlop={10}
+            style={styles.iconBtn}
+          >
             <Ionicons name="menu" size={26} color="#333" />
           </Pressable>
         </View>
@@ -88,12 +84,7 @@ export default function Patientenakte() {
             <Text style={styles.label}>Alter</Text>
             <Text style={styles.value}>{patient.age}</Text>
           </View>
-          <Ionicons
-            name="pencil"
-            size={18}
-            color="#111"
-            style={{ opacity: 0.7 }}
-          />
+          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
         </View>
 
         <View style={styles.fieldRow}>
@@ -101,12 +92,7 @@ export default function Patientenakte() {
             <Text style={styles.label}>Geburtsdatum</Text>
             <Text style={styles.value}>{patient.dob}</Text>
           </View>
-          <Ionicons
-            name="pencil"
-            size={18}
-            color="#111"
-            style={{ opacity: 0.7 }}
-          />
+          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
         </View>
 
         <View style={styles.fieldRow}>
@@ -114,12 +100,7 @@ export default function Patientenakte() {
             <Text style={styles.label}>E-Mail</Text>
             <Text style={styles.value}>{patient.email}</Text>
           </View>
-          <Ionicons
-            name="pencil"
-            size={18}
-            color="#111"
-            style={{ opacity: 0.7 }}
-          />
+          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
         </View>
 
         <View style={styles.fieldRow}>
@@ -127,60 +108,56 @@ export default function Patientenakte() {
             <Text style={styles.label}>Telefonnummer</Text>
             <Text style={styles.value}>{patient.phone}</Text>
           </View>
-          <Ionicons
-            name="pencil"
-            size={18}
-            color="#111"
-            style={{ opacity: 0.7 }}
-          />
+          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
         </View>
 
         <View style={styles.field}>
           <Text style={styles.value}>{patient.registered}</Text>
         </View>
 
-        {/* Button */}
         <Pressable
-  style={styles.bigBtn}
-  onPress={() =>
-    router.push({
-      pathname: "/therapist-chat",
-      params: { name: patient.name },
-    })
-  }
->
-  <Text style={styles.bigBtnText}>Chat öffnen</Text>
-</Pressable>
+          style={styles.bigBtn}
+          onPress={() =>
+            router.push({
+              pathname: "/therapist-chat",
+              params: { patientId }, // ✅ موحد
+            } as any)
+          }
+        >
+          <Text style={styles.bigBtnText}>Chat öffnen</Text>
+        </Pressable>
 
+        <Pressable
+          style={[styles.bigBtn, { marginTop: 12 }]}
+          onPress={() =>
+            router.push({
+              pathname: "/sitzungverlauf",
+              params: { patientId }, // ✅ موحد (بدل id)
+            } as any)
+          }
+        >
+          <Text style={styles.bigBtnText}>Sitzungsverlauf</Text>
+        </Pressable>
       </ScrollView>
 
       {/* ===== BOTTOM TABS (FIXED) ===== */}
       <View style={styles.tabs}>
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.replace("/therapist-home")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
           <Ionicons name="home-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/chat-list")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.tabActive}
-          onPress={() => router.replace("/therapist-patients")}
-        >
+        <Pressable style={styles.tabActive} onPress={() => router.replace("/therapist-patients")}>
           <Ionicons name="people" size={22} color="#111" />
           <Text style={styles.tabTextActive}>Patienten</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.replace("/therapist-profile")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
           <Ionicons name="person-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Profil</Text>
         </Pressable>
@@ -201,16 +178,12 @@ export default function Patientenakte() {
               <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/appointment")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/chat-list")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
               <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
-              <Text style={styles.menuText}>Patientliste</Text>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
@@ -244,7 +217,6 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
 
-  // ✅ WICHTIG: Platz unten für Tabs
   scrollContent: {
     paddingBottom: 120,
   },
@@ -259,10 +231,12 @@ const styles = StyleSheet.create({
 
   headerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingBottom: 10,
   },
+
+  iconBtn: { padding: 6 },
 
   title: {
     fontSize: 20,
