@@ -1,13 +1,14 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  TextInput,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function TherapistProfile() {
   const [name, setName] = useState("Bellamy Nour");
@@ -18,6 +19,14 @@ export default function TherapistProfile() {
   // Simple edit toggles (wie Stift-Icon)
   const [editPhone, setEditPhone] = useState(false);
   const [editDob, setEditDob] = useState(false);
+
+  // MENU
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const go = (path: string) => {
+    setMenuOpen(false);
+    router.replace(path as any);
+  };
 
   const onSave = () => {
     // später: speichern via Backend/Context
@@ -34,7 +43,8 @@ export default function TherapistProfile() {
       <View style={styles.headerRow}>
         <Text style={styles.title}>Profil</Text>
 
-        <Pressable onPress={() => router.push("/menu")} hitSlop={10}>
+        {/* ✅ بدل router.push("/menu") */}
+        <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
           <Ionicons name="menu" size={26} color="#333" />
         </Pressable>
       </View>
@@ -128,27 +138,77 @@ export default function TherapistProfile() {
           <Text style={styles.tabText}>Startseite</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.push("/chat-list")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
         <Pressable
           style={styles.tab}
-          onPress={() => router.push("/chat-list")}
+          onPress={() => router.push("/therapist-patients")}
         >
           <Ionicons name="people-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Patienten</Text>
         </Pressable>
 
-        <Pressable style={styles.tabActive} onPress={() => router.replace("/therapist-profile")}>
+        <Pressable
+          style={styles.tabActive}
+          onPress={() => router.replace("/therapist-profile")}
+        >
           <Ionicons name="person" size={22} color="#111" />
           <Text style={styles.tabTextActive}>Profile</Text>
         </Pressable>
       </View>
+
+      {/* ===================== MENU MODAL (نفس TherapistHome) ===================== */}
+      <Modal transparent visible={menuOpen} animationType="fade">
+        {/* Overlay: click to close */}
+        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+          {/* Drawer: stop propagation */}
+          <Pressable style={styles.drawer} onPress={() => {}}>
+            <Text style={styles.menuTitle}>Menü:</Text>
+            <View style={styles.menuDivider} />
+
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
+              <Text style={styles.menuText}>Home</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-patients")}
+            >
+              <Text style={styles.menuText}>Meine Patienten</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-appointments")}
+            >
+              <Text style={styles.menuText}>Termine</Text>
+            </Pressable>
+
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
+              <Text style={styles.menuText}>Chat</Text>
+            </Pressable>
+
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
+              <Text style={styles.menuText}>Mein Profil</Text>
+            </Pressable>
+
+            <View style={styles.menuDivider} />
+
+            <Pressable
+              style={styles.logoutBtn}
+              onPress={() => {
+                setMenuOpen(false);
+                router.replace("/login-therapeut");
+              }}
+            >
+              <Text style={styles.logoutText}>abmelden</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -316,5 +376,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     color: "#111",
+  },
+
+  /* MENU MODAL */
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
+  },
+
+  drawer: {
+    width: "78%",
+    height: "100%",
+    backgroundColor: "#BDBDBD",
+    paddingTop: 70,
+    paddingHorizontal: 26,
+  },
+
+  menuTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111",
+    marginBottom: 10,
+  },
+
+  menuDivider: {
+    height: 1,
+    backgroundColor: "#111",
+    opacity: 0.4,
+    marginVertical: 10,
+  },
+
+  menuItem: {
+    paddingVertical: 8,
+  },
+
+  menuText: {
+    fontSize: 16,
+    color: "#111",
+    fontWeight: "600",
+  },
+
+  logoutBtn: {
+    paddingVertical: 10,
+  },
+
+  logoutText: {
+    color: "#B00000",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

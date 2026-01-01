@@ -1,23 +1,43 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+
+import { api, Appointment } from "./appointmentsApi";
 
 export default function TherapistHome() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const therapistName = "Herr Bellamy";
-  const nextSession = {
-    patient: "Alex",
-    date: "Do – 04. März",
-    time: "12:30",
-  };
+
+
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loadingNext, setLoadingNext] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingNext(true);
+        const data = await api.fetchAppointments();
+        setAppointments(data);
+      } finally {
+        setLoadingNext(false);
+      }
+    })();
+  }, []);
+
+  // ✅ أقرب موعد قادم (حسب التاريخ + الوقت)
+  const nextAppointment = useMemo(() => {
+    const now = new Date();
+
+    const sorted = [...appointments].sort((a, b) => {
+      const da = `${a.date}T${a.time}:00`;
+      const db = `${b.date}T${b.time}:00`;
+      return da.localeCompare(db);
+    });
+
+    return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
+  }, [appointments]);
 
   const patientPreview = {
     name: "Alex wirtz",
@@ -27,6 +47,15 @@ export default function TherapistHome() {
   const go = (path: string) => {
     setMenuOpen(false);
     router.replace(path as any);
+  };
+
+  const openNextInAppointments = () => {
+    if (!nextAppointment) {
+      router.replace("/therapist-appointments");
+      return;
+    }
+    // ✅ يفتح صفحة Termine وبنفس اليوم تلقائيًا
+    router.push(`/therapist-appointments?date=${nextAppointment.date}` as any);
   };
 
   return (
@@ -45,26 +74,36 @@ export default function TherapistHome() {
 
       <View style={styles.divider} />
 
-      {/* Next session card */}
-      <View style={styles.cardLarge}>
+      {/* ✅ Next session card */}
+      <Pressable style={styles.cardLarge} onPress={openNextInAppointments}>
         <Text style={styles.cardTitle}>
-          Nächste Sitzung von {nextSession.patient}:
+          {loadingNext
+            ? "Lade nächste Sitzung..."
+            : nextAppointment
+            ? `Nächste Sitzung von ${nextAppointment.patient}:`
+            : "Keine kommenden Termine"}
         </Text>
 
         <View style={styles.cardDivider} />
 
-        <View style={styles.cardRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Datum</Text>
-            <Text style={styles.value}>{nextSession.date}</Text>
-          </View>
+        {nextAppointment ? (
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Datum</Text>
+              <Text style={styles.value}>{nextAppointment.date}</Text>
+            </View>
 
-          <View style={{ flex: 1, alignItems: "flex-end" }}>
-            <Text style={styles.label}>Uhrzeit</Text>
-            <Text style={styles.value}>{nextSession.time}</Text>
+            <View style={{ flex: 1, alignItems: "flex-end" }}>
+              <Text style={styles.label}>Uhrzeit</Text>
+              <Text style={styles.value}>{nextAppointment.time}</Text>
+            </View>
           </View>
-        </View>
-      </View>
+        ) : (
+          <Text style={[styles.value, { marginTop: 6 }]}>
+            Tippe hier, um Termine zu verwalten
+          </Text>
+        )}
+      </Pressable>
 
       {/* Patients card */}
       <View style={styles.cardPatients}>
@@ -95,12 +134,12 @@ export default function TherapistHome() {
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/chat-list")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/chat-list")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-patients")}>
           <Ionicons name="people-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Patienten</Text>
         </Pressable>
@@ -113,9 +152,7 @@ export default function TherapistHome() {
 
       {/* ===================== MENU MODAL ===================== */}
       <Modal transparent visible={menuOpen} animationType="fade">
-        {/* Overlay: click to close */}
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          {/* Drawer: stop propagation */}
           <Pressable style={styles.drawer} onPress={() => {}}>
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
@@ -124,7 +161,7 @@ export default function TherapistHome() {
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/chat-list")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
               <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
@@ -132,12 +169,8 @@ export default function TherapistHome() {
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/chat-list")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
               <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/chat-list")}>
-              <Text style={styles.menuText}>Patientliste</Text>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
@@ -304,7 +337,6 @@ const styles = StyleSheet.create({
     color: "#111",
   },
 
-  /* MENU MODAL */
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",

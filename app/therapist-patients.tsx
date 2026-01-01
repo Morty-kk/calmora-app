@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Patient = {
   id: string;
@@ -71,7 +71,7 @@ export default function TherapistPatients() {
           <Text style={styles.tabText}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/chat-list")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
@@ -106,13 +106,10 @@ export default function TherapistPatients() {
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/chat-list")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
               <Text style={styles.menuText}>Chat</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
-              <Text style={styles.menuText}>Patientliste</Text>
-            </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
               <Text style={styles.menuText}>Mein Profil</Text>
