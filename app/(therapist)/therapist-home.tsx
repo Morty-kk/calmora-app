@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { api, Appointment } from "./appointmentsApi";
+import { getPatientById } from "./patientsApi";
+
 
 export default function TherapistHome() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,18 +28,26 @@ export default function TherapistHome() {
     })();
   }, []);
 
-  // ✅ أقرب موعد قادم (حسب التاريخ + الوقت)
-  const nextAppointment = useMemo(() => {
-    const now = new Date();
 
-    const sorted = [...appointments].sort((a, b) => {
-      const da = `${a.date}T${a.time}:00`;
-      const db = `${b.date}T${b.time}:00`;
-      return da.localeCompare(db);
-    });
+ const nextAppointment = useMemo(() => {
+  const now = new Date();
 
-    return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
-  }, [appointments]);
+  const sorted = [...appointments].sort((a, b) => {
+    const da = `${a.date}T${a.time}:00`;
+    const db = `${b.date}T${b.time}:00`;
+    return da.localeCompare(db);
+  });
+
+  return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
+}, [appointments]);
+
+const nextPatientName = useMemo(() => {
+  if (!nextAppointment) return "";
+
+  const patient = getPatientById(nextAppointment.patientId);
+  return patient ? patient.name : nextAppointment.patientId;
+}, [nextAppointment]);
+
 
   const patientPreview = {
     name: "Alex wirtz",
@@ -54,7 +64,7 @@ export default function TherapistHome() {
       router.replace("/therapist-appointments");
       return;
     }
-    // ✅ يفتح صفحة Termine وبنفس اليوم تلقائيًا
+  
     router.push(`/therapist-appointments?date=${nextAppointment.date}` as any);
   };
 
@@ -74,13 +84,13 @@ export default function TherapistHome() {
 
       <View style={styles.divider} />
 
-      {/* ✅ Next session card */}
+      {/*  Next session card */}
       <Pressable style={styles.cardLarge} onPress={openNextInAppointments}>
         <Text style={styles.cardTitle}>
           {loadingNext
             ? "Lade nächste Sitzung..."
             : nextAppointment
-            ? `Nächste Sitzung von ${nextAppointment.patient}:`
+            ? `Nächste Sitzung von ${nextPatientName}:`
             : "Keine kommenden Termine"}
         </Text>
 
@@ -105,27 +115,38 @@ export default function TherapistHome() {
         )}
       </Pressable>
 
-      {/* Patients card */}
-      <View style={styles.cardPatients}>
-        <View style={styles.patientsHeader}>
-          <Text style={styles.cardTitle}>Meine Patienten</Text>
+      {/* Schnellzugriff */}
+<View style={styles.cardQuick}>
+  <Text style={styles.cardTitle}>Schnellzugriff</Text>
 
-          <Pressable onPress={() => router.push("/therapist-patients")}>
-            <Text style={styles.link}>Alle ansehen</Text>
-          </Pressable>
-        </View>
+  <View style={styles.quickRow}>
+    <Pressable
+      style={styles.quickBtn}
+      onPress={() => router.push("/therapist-appointments")}
+    >
+      <Ionicons name="calendar-outline" size={22} color="#111" />
+      <Text style={styles.quickText}>Termin erstellen</Text>
+    </Pressable>
 
-        <View style={styles.patientRow}>
-          <View>
-            <Text style={styles.patientName}>{patientPreview.name}</Text>
-            <Text style={styles.patientInfo}>{patientPreview.info}</Text>
-          </View>
+    <Pressable
+  style={styles.quickBtn}
+  onPress={() => router.push("/sitzungverlauf")}
+>
+  <Ionicons name="document-text-outline" size={22} color="#111" />
+  <Text style={styles.quickText}>Sitzungsverlauf</Text>
+</Pressable>
 
-          <View style={styles.avatar} />
-        </View>
-      </View>
 
-      <View style={{ flex: 1 }} />
+    <Pressable
+      style={styles.quickBtn}
+      onPress={() => router.push("/therapist-patients")}
+    >
+      <Ionicons name="people-outline" size={22} color="#111" />
+      <Text style={styles.quickText}>Patientenliste</Text>
+    </Pressable>
+  </View>
+</View>
+
 
       {/* Bottom Tabs */}
       <View style={styles.tabs}>
@@ -134,7 +155,7 @@ export default function TherapistHome() {
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
@@ -169,7 +190,7 @@ export default function TherapistHome() {
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
               <Text style={styles.menuText}>Chat</Text>
             </Pressable>
 
@@ -237,17 +258,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  cardPatients: {
-    backgroundColor: "#D9D9D9",
-    borderRadius: 16,
-    padding: 14,
-  },
-
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
-  },
 
   cardDivider: {
     height: 1,
@@ -272,51 +282,56 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  patientsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
+
+cardQuick: {
+  backgroundColor: "#D9D9D9",
+  borderRadius: 16,
+  padding: 14,
+  marginTop: 6,
+},
+
+quickRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 12,
+},
+
+quickBtn: {
+  flex: 1,
+  backgroundColor: "#ECECEC",
+  borderRadius: 14,
+  paddingVertical: 14,
+  alignItems: "center",
+  marginHorizontal: 4,
+  gap: 6,
+},
+
+quickText: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#111",
+  textAlign: "center",
+},
+
+cardTitle: { 
+  fontSize: 17,
+   fontWeight: "700",
+   color: "#111", 
   },
 
-  link: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#333",
-  },
+tabs: {
+  flexDirection: "row",
+  justifyContent: "space-around",
+  backgroundColor: "#E0E0E0",
+  paddingVertical: 10,
+  paddingHorizontal: 10,
 
-  patientRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  patientName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  patientInfo: {
-    fontSize: 13,
-    color: "#555",
-    marginTop: 2,
-  },
-
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#9E9E9E",
-  },
-
-  tabs: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#E0E0E0",
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
+  position: "absolute",
+  bottom: 12,
+  left: 12,
+  right: 12,
+  borderRadius: 16,
+},
 
   tab: {
     alignItems: "center",

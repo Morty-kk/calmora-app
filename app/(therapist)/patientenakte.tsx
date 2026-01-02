@@ -9,9 +9,12 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { getPatientById } from "./patientsApi";
 
 export default function Patientenakte() {
+  const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const params = useLocalSearchParams<{ id?: string; patientId?: string }>();
@@ -27,198 +30,202 @@ export default function Patientenakte() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* ===== SCROLLABLE CONTENT ===== */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Text style={styles.brand}>Calmora</Text>
-
-        {/* Header */}
-        <View style={styles.headerRow}>
-          {/* ⬅️ Back */}
-          <Pressable
-            onPress={() => router.replace("/therapist-patients")}
-            hitSlop={10}
-            style={styles.iconBtn}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </Pressable>
-
-          <Text style={styles.title}>Patientenakte</Text>
-
-          {/* Menu */}
-          <Pressable
-            onPress={() => setMenuOpen(true)}
-            hitSlop={10}
-            style={styles.iconBtn}
-          >
-            <Ionicons name="menu" size={26} color="#333" />
-          </Pressable>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Avatar */}
-        <View style={styles.avatarWrap}>
-          <View style={styles.avatar}>
-            <Ionicons name="image-outline" size={44} color="#bdbdbd" />
-          </View>
-        </View>
-
-        {/* Name */}
-        <Text style={styles.patientName}>{patient.name}</Text>
-
-        {/* Section */}
-        <Text style={styles.sectionTitle}>Persönliche Informationen</Text>
-
-        {/* Fields */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Geschlecht</Text>
-          <Text style={styles.value}>{patient.gender}</Text>
-        </View>
-
-        <View style={styles.fieldRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Alter</Text>
-            <Text style={styles.value}>{patient.age}</Text>
-          </View>
-          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Geburtsdatum</Text>
-            <Text style={styles.value}>{patient.dob}</Text>
-          </View>
-          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>E-Mail</Text>
-            <Text style={styles.value}>{patient.email}</Text>
-          </View>
-          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Telefonnummer</Text>
-            <Text style={styles.value}>{patient.phone}</Text>
-          </View>
-          <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.value}>{patient.registered}</Text>
-        </View>
-
-        <Pressable
-          style={styles.bigBtn}
-          onPress={() =>
-            router.push({
-              pathname: "/therapist-chat",
-              params: { patientId }, // ✅ موحد
-            } as any)
-          }
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        {/* ===== SCROLLABLE CONTENT ===== */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          <Text style={styles.bigBtnText}>Chat öffnen</Text>
-        </Pressable>
+          <Text style={styles.brand}>Calmora</Text>
 
-        <Pressable
-          style={[styles.bigBtn, { marginTop: 12 }]}
-          onPress={() =>
-            router.push({
-              pathname: "/sitzungverlauf",
-              params: { patientId }, // ✅ موحد (بدل id)
-            } as any)
-          }
-        >
-          <Text style={styles.bigBtnText}>Sitzungsverlauf</Text>
-        </Pressable>
-      </ScrollView>
-
-      {/* ===== BOTTOM TABS (FIXED) ===== */}
-      <View style={styles.tabs}>
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
-          <Ionicons name="home-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Startseite</Text>
-        </Pressable>
-
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
-          <Ionicons name="chatbubbles-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Chat</Text>
-        </Pressable>
-
-        <Pressable style={styles.tabActive} onPress={() => router.replace("/therapist-patients")}>
-          <Ionicons name="people" size={22} color="#111" />
-          <Text style={styles.tabTextActive}>Patienten</Text>
-        </Pressable>
-
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
-          <Ionicons name="person-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Profil</Text>
-        </Pressable>
-      </View>
-
-      {/* ===== MENU DRAWER ===== */}
-      <Modal transparent visible={menuOpen} animationType="fade">
-        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <Pressable style={styles.drawer} onPress={() => {}}>
-            <Text style={styles.menuTitle}>Menü:</Text>
-            <View style={styles.menuDivider} />
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
-              <Text style={styles.menuText}>Home</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
-              <Text style={styles.menuText}>Meine Patienten</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
-              <Text style={styles.menuText}>Termine</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
-              <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
-              <Text style={styles.menuText}>Mein Profil</Text>
-            </Pressable>
-
-            <View style={styles.menuDivider} />
-
+          {/* Header */}
+          <View style={styles.headerRow}>
+            {/* ⬅️ Back */}
             <Pressable
-              style={styles.logoutBtn}
-              onPress={() => {
-                setMenuOpen(false);
-                router.replace("/login-therapeut");
-              }}
+              onPress={() => router.replace("/therapist-patients")}
+              hitSlop={10}
+              style={styles.iconBtn}
             >
-              <Text style={styles.logoutText}>abmelden</Text>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </Pressable>
+
+            <Text style={styles.title}>Patientenakte</Text>
+
+            {/* Menu */}
+            <Pressable
+              onPress={() => setMenuOpen(true)}
+              hitSlop={10}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="menu" size={26} color="#333" />
+            </Pressable>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Avatar */}
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatar}>
+              <Ionicons name="image-outline" size={44} color="#bdbdbd" />
+            </View>
+          </View>
+
+          {/* Name */}
+          <Text style={styles.patientName}>{patient.name}</Text>
+
+          {/* Section */}
+          <Text style={styles.sectionTitle}>Persönliche Informationen</Text>
+
+          {/* Fields */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Geschlecht</Text>
+            <Text style={styles.value}>{patient.gender}</Text>
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Alter</Text>
+              <Text style={styles.value}>{patient.age}</Text>
+            </View>
+            <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Geburtsdatum</Text>
+              <Text style={styles.value}>{patient.dob}</Text>
+            </View>
+            <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>E-Mail</Text>
+              <Text style={styles.value}>{patient.email}</Text>
+            </View>
+            <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Telefonnummer</Text>
+              <Text style={styles.value}>{patient.phone}</Text>
+            </View>
+            <Ionicons name="pencil" size={18} color="#111" style={{ opacity: 0.7 }} />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.value}>{patient.registered}</Text>
+          </View>
+
+          {/* Actions */}
+          <Pressable
+            style={styles.bigBtn}
+            onPress={() =>
+              router.push({
+                pathname: "/therapist-chat",
+                params: { patientId: patient.id, name: patient.name },
+              } as any)
+            }
+          >
+            <Text style={styles.bigBtnText}>Chat öffnen</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.bigBtn, { marginTop: 12 }]}
+            onPress={() =>
+              router.push({
+                pathname: "/sitzungverlauf",
+                params: { patientId: patient.id, name: patient.name },
+              } as any)
+            }
+          >
+            <Text style={styles.bigBtnText}>Sitzungsverlauf</Text>
+          </Pressable>
+        </ScrollView>
+
+        {/* ===== BOTTOM TABS (FIXED + iOS SAFE) ===== */}
+        <View style={[styles.tabs, { bottom: insets.bottom + 10 }]}>
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
+            <Ionicons name="home-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Startseite</Text>
+          </Pressable>
+
+          <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Chat</Text>
+          </Pressable>
+
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-patients")}>
+            <Ionicons name="people" size={22} color="#111" />
+            <Text style={styles.tabTextActive}>Patienten</Text>
+          </Pressable>
+
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
+            <Ionicons name="person-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Profil</Text>
+          </Pressable>
+        </View>
+
+        {/* ===== MENU DRAWER ===== */}
+        <Modal transparent visible={menuOpen} animationType="fade">
+          <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+            <Pressable style={styles.drawer} onPress={() => {}}>
+              <Text style={styles.menuTitle}>Menü:</Text>
+              <View style={styles.menuDivider} />
+
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
+                <Text style={styles.menuText}>Home</Text>
+              </Pressable>
+
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
+                <Text style={styles.menuText}>Meine Patienten</Text>
+              </Pressable>
+
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
+                <Text style={styles.menuText}>Termine</Text>
+              </Pressable>
+
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
+                <Text style={styles.menuText}>Chat</Text>
+              </Pressable>
+
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
+                <Text style={styles.menuText}>Mein Profil</Text>
+              </Pressable>
+
+              <View style={styles.menuDivider} />
+
+              <Pressable
+                style={styles.logoutBtn}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.replace("/login-therapeut");
+                }}
+              >
+                <Text style={styles.logoutText}>abmelden</Text>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#fff" },
+
   container: {
     flex: 1,
     backgroundColor: "#fff",
     paddingTop: 58,
     paddingHorizontal: 22,
-    paddingBottom: 0,
   },
 
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 150, 
   },
 
   brand: {
@@ -326,19 +333,19 @@ const styles = StyleSheet.create({
   },
 
   tabs: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#BDBDBD",
+    backgroundColor: "#E0E0E0",
+    borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 10,
+
+    position: "absolute",
+    left: 14,
+    right: 14,
   },
 
   tab: { alignItems: "center", width: 78, gap: 4 },
-  tabActive: { alignItems: "center", width: 78, gap: 4 },
 
   tabText: { fontSize: 12, fontWeight: "600", color: "#111", opacity: 0.85 },
   tabTextActive: { fontSize: 12, fontWeight: "800", color: "#111" },

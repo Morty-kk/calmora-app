@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Appointment, api as apptApi } from "./appointmentsApi";
 import { PATIENTS, Patient } from "./patientsApi";
@@ -12,14 +13,11 @@ type PatientRow = {
   sub: string;
 };
 
-const pad2 = (n: number) => String(n).padStart(2, "0");
-
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function parseISODateTime(date: string, time: string) {
-  // "YYYY-MM-DD" + "HH:MM"
   return new Date(`${date}T${time}:00`);
 }
 
@@ -29,9 +27,9 @@ function diffDays(from: Date, to: Date) {
   return Math.round((b - a) / (1000 * 60 * 60 * 24));
 }
 
-function makeSubForPatient(patientName: string, appts: Appointment[], now: Date) {
+function makeSubForPatient(patientId: string, appts: Appointment[], now: Date) {
   const list = appts
-    .filter((a) => a.patientId === patientName)
+    .filter((a) => a.patientId === patientId) 
     .sort((a, b) => {
       const da = `${a.date}T${a.time}`;
       const db = `${b.date}T${b.time}`;
@@ -54,6 +52,8 @@ function makeSubForPatient(patientName: string, appts: Appointment[], now: Date)
 }
 
 export default function TherapistPatients() {
+  const insets = useSafeAreaInsets();
+
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -77,7 +77,7 @@ export default function TherapistPatients() {
     return PATIENTS.map((p: Patient) => ({
       id: p.id,
       name: p.name,
-      sub: makeSubForPatient(p.name, appointments, now),
+      sub: makeSubForPatient(p.id, appointments, now), 
     }));
   }, [appointments]);
 
@@ -87,121 +87,126 @@ export default function TherapistPatients() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.brand}>Calmora</Text>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <Text style={styles.brand}>Calmora</Text>
 
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Patientenliste</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Patientenliste</Text>
 
-        <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
-          <Ionicons name="menu" size={26} color="#333" />
-        </Pressable>
-      </View>
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+            <Ionicons name="menu" size={26} color="#333" />
+          </Pressable>
+        </View>
 
-      <View style={styles.divider} />
+        <View style={styles.divider} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <Text style={styles.loadingText}>Lade Patienten & Termine...</Text>
-          </View>
-        ) : (
-          patients.map((p) => (
-            <Pressable
-              key={p.id}
-              style={styles.row}
-              onPress={() =>
-                router.push({
-                  pathname: "/patientenakte",
-                  params: { id: p.id }, 
-                })
-              }
-            >
-              <View style={styles.avatar} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{p.name}</Text>
-                {!!p.sub && <Text style={styles.sub}>{p.sub}</Text>}
-              </View>
-            </Pressable>
-          ))
-        )}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 140 }} 
+        >
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <Text style={styles.loadingText}>Lade Patienten & Termine...</Text>
+            </View>
+          ) : (
+            patients.map((p) => (
+              <Pressable
+                key={p.id}
+                style={styles.row}
+                onPress={() =>
+                  router.push({
+                    pathname: "/patientenakte",
+                    params: { id: p.id },
+                  })
+                }
+              >
+                <View style={styles.avatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name}>{p.name}</Text>
+                  {!!p.sub && <Text style={styles.sub}>{p.sub}</Text>}
+                </View>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
 
-        <View style={{ height: 80 }} />
-      </ScrollView>
+        {/* Tabs (fixed bottom, iOS safe) */}
+        <View style={[styles.tabs, { bottom: insets.bottom + 10 }]}>
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
+            <Ionicons name="home-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Startseite</Text>
+          </Pressable>
 
-      <View style={styles.tabs}>
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
-          <Ionicons name="home-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Startseite</Text>
-        </Pressable>
+          <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Chat</Text>
+          </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
-          <Ionicons name="chatbubbles-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Chat</Text>
-        </Pressable>
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-patients")}>
+            <Ionicons name="people" size={22} color="#111" />
+            <Text style={styles.tabTextActive}>Patienten</Text>
+          </Pressable>
 
-        <Pressable style={styles.tabActive} onPress={() => router.replace("/therapist-patients")}>
-          <Ionicons name="people" size={22} color="#111" />
-          <Text style={styles.tabTextActive}>Patienten</Text>
-        </Pressable>
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
+            <Ionicons name="person-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Profil</Text>
+          </Pressable>
+        </View>
 
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
-          <Ionicons name="person-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Profil</Text>
-        </Pressable>
-      </View>
+        <Modal transparent visible={menuOpen} animationType="fade">
+          <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+            <Pressable style={styles.drawer} onPress={() => {}}>
+              <Text style={styles.menuTitle}>Menü:</Text>
+              <View style={styles.menuDivider} />
 
-      <Modal transparent visible={menuOpen} animationType="fade">
-        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <Pressable style={styles.drawer} onPress={() => {}}>
-            <Text style={styles.menuTitle}>Menü:</Text>
-            <View style={styles.menuDivider} />
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
+                <Text style={styles.menuText}>Home</Text>
+              </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
-              <Text style={styles.menuText}>Home</Text>
-            </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
+                <Text style={styles.menuText}>Meine Patienten</Text>
+              </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
-              <Text style={styles.menuText}>Meine Patienten</Text>
-            </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
+                <Text style={styles.menuText}>Termine</Text>
+              </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
-              <Text style={styles.menuText}>Termine</Text>
-            </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
+                <Text style={styles.menuText}>Chat</Text>
+              </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
-              <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
+                <Text style={styles.menuText}>Mein Profil</Text>
+              </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
-              <Text style={styles.menuText}>Mein Profil</Text>
-            </Pressable>
+              <View style={styles.menuDivider} />
 
-            <View style={styles.menuDivider} />
-
-            <Pressable
-              style={styles.logoutBtn}
-              onPress={() => {
-                setMenuOpen(false);
-                router.replace("/login-therapeut");
-              }}
-            >
-              <Text style={styles.logoutText}>abmelden</Text>
+              <Pressable
+                style={styles.logoutBtn}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.replace("/login-therapeut");
+                }}
+              >
+                <Text style={styles.logoutText}>abmelden</Text>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#fff" },
+
   container: {
     flex: 1,
     backgroundColor: "#fff",
     paddingTop: 58,
     paddingHorizontal: 0,
-    paddingBottom: 0,
   },
 
   brand: {
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 28,
+    fontSize: 18, 
     fontWeight: "700",
     color: "#111",
   },
@@ -273,19 +278,19 @@ const styles = StyleSheet.create({
   },
 
   tabs: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#BDBDBD",
+    backgroundColor: "#E0E0E0",
+    borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 10,
+
+    position: "absolute",
+    left: 14,
+    right: 14,
   },
 
   tab: { alignItems: "center", width: 78, gap: 4 },
-  tabActive: { alignItems: "center", width: 78, gap: 4 },
 
   tabText: { fontSize: 12, fontWeight: "600", color: "#111", opacity: 0.85 },
   tabTextActive: { fontSize: 12, fontWeight: "800", color: "#111" },

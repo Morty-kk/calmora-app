@@ -4,23 +4,25 @@ import React, { useState } from "react";
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TherapistProfile() {
+  const insets = useSafeAreaInsets();
+
   const [name, setName] = useState("Bellamy Nour");
   const [phone, setPhone] = useState("+49 0171 583429");
   const [dob, setDob] = useState("DD MM YYYY");
   const [gender, setGender] = useState("Add Details");
 
-  // Simple edit toggles (wie Stift-Icon)
   const [editPhone, setEditPhone] = useState(false);
   const [editDob, setEditDob] = useState(false);
 
-  // MENU
   const [menuOpen, setMenuOpen] = useState(false);
 
   const go = (path: string) => {
@@ -29,197 +31,194 @@ export default function TherapistProfile() {
   };
 
   const onSave = () => {
-    // später: speichern via Backend/Context
     setEditPhone(false);
     setEditDob(false);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header brand */}
-      <Text style={styles.brand}>Calmora</Text>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        {/* ===== Scrollable Content ===== */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Header brand */}
+          <Text style={styles.brand}>Calmora</Text>
 
-      {/* Titel + Menu */}
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Profil</Text>
+          {/* Titel + Menu */}
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>Profil</Text>
 
-        {/* ✅ بدل router.push("/menu") */}
-        <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
-          <Ionicons name="menu" size={26} color="#333" />
-        </Pressable>
-      </View>
+            <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+              <Ionicons name="menu" size={26} color="#333" />
+            </Pressable>
+          </View>
 
-      <View style={styles.divider} />
+          <View style={styles.divider} />
 
-      {/* Avatar */}
-      <View style={styles.avatarWrap}>
-        <View style={styles.avatar}>
-          <Ionicons name="image-outline" size={44} color="#bdbdbd" />
-        </View>
+          {/* Avatar */}
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatar}>
+              <Ionicons name="image-outline" size={44} color="#bdbdbd" />
+            </View>
 
-        <Pressable style={styles.cameraBtn} onPress={() => {}}>
-          <Ionicons name="camera" size={18} color="#fff" />
-        </Pressable>
-      </View>
+            <Pressable style={styles.cameraBtn} onPress={() => {}}>
+              <Ionicons name="camera" size={18} color="#fff" />
+            </Pressable>
+          </View>
 
-      <View style={styles.dividerThin} />
+          <View style={styles.dividerThin} />
 
-      {/* Section */}
-      <Text style={styles.sectionTitle}>Persönliche Informationen</Text>
+          {/* Section */}
+          <Text style={styles.sectionTitle}>Persönliche Informationen</Text>
 
-      {/* Name (nicht editierbar wie im Mock) */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{name}</Text>
-      </View>
+          {/* Name */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Name</Text>
+            <Text style={styles.value}>{name}</Text>
+          </View>
 
-      {/* Telefon (editierbar) */}
-      <View style={styles.field}>
-        <View style={styles.fieldTopRow}>
-          <Text style={styles.label}>Telefonnummer</Text>
-          <Pressable onPress={() => setEditPhone((v) => !v)} hitSlop={10}>
-            <Ionicons name="pencil" size={18} color="#6b7280" />
+          {/* Telefon */}
+          <View style={styles.field}>
+            <View style={styles.fieldTopRow}>
+              <Text style={styles.label}>Telefonnummer</Text>
+              <Pressable onPress={() => setEditPhone((v) => !v)} hitSlop={10}>
+                <Ionicons name="pencil" size={18} color="#6b7280" />
+              </Pressable>
+            </View>
+
+            {editPhone ? (
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+            ) : (
+              <Text style={styles.value}>{phone}</Text>
+            )}
+          </View>
+
+          {/* Geburtsdatum */}
+          <View style={styles.field}>
+            <View style={styles.fieldTopRow}>
+              <Text style={styles.label}>Geburtsdatum</Text>
+              <Pressable onPress={() => setEditDob((v) => !v)} hitSlop={10}>
+                <Ionicons name="pencil" size={18} color="#6b7280" />
+              </Pressable>
+            </View>
+
+            {editDob ? (
+              <TextInput
+                style={styles.input}
+                value={dob}
+                onChangeText={setDob}
+                placeholder="DD MM YYYY"
+              />
+            ) : (
+              <Text style={styles.value}>{dob}</Text>
+            )}
+          </View>
+
+          {/* Geschlecht */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Geschlecht</Text>
+            <Pressable onPress={() => {}}>
+              <Text style={styles.value}>{gender}</Text>
+            </Pressable>
+          </View>
+
+          {/* Save */}
+          <Pressable style={styles.saveBtn} onPress={onSave}>
+            <Text style={styles.saveText}>Speichern</Text>
+          </Pressable>
+        </ScrollView>
+
+        {/* ===== Bottom Tabs (fixed) ===== */}
+        <View style={[styles.tabs, { bottom: insets.bottom + 10 }]}>
+          <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
+            <Ionicons name="home-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Startseite</Text>
+          </Pressable>
+
+          <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Chat</Text>
+          </Pressable>
+
+          <Pressable style={styles.tab} onPress={() => router.push("/therapist-patients")}>
+            <Ionicons name="people-outline" size={22} color="#111" />
+            <Text style={styles.tabText}>Patienten</Text>
+          </Pressable>
+
+          <Pressable style={styles.tabActive} onPress={() => router.replace("/therapist-profile")}>
+            <Ionicons name="person" size={22} color="#111" />
+            <Text style={styles.tabTextActive}>Profil</Text>
           </Pressable>
         </View>
 
-        {editPhone ? (
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-        ) : (
-          <Text style={styles.value}>{phone}</Text>
-        )}
-      </View>
+        {/* ===================== MENU MODAL ===================== */}
+        <Modal transparent visible={menuOpen} animationType="fade">
+          <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+            <Pressable style={styles.drawer} onPress={() => {}}>
+              <Text style={styles.menuTitle}>Menü:</Text>
+              <View style={styles.menuDivider} />
 
-      {/* Geburtsdatum (editierbar) */}
-      <View style={styles.field}>
-        <View style={styles.fieldTopRow}>
-          <Text style={styles.label}>Geburtsdatum</Text>
-          <Pressable onPress={() => setEditDob((v) => !v)} hitSlop={10}>
-            <Ionicons name="pencil" size={18} color="#6b7280" />
-          </Pressable>
-        </View>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
+                <Text style={styles.menuText}>Home</Text>
+              </Pressable>
 
-        {editDob ? (
-          <TextInput
-            style={styles.input}
-            value={dob}
-            onChangeText={setDob}
-            placeholder="DD MM YYYY"
-          />
-        ) : (
-          <Text style={styles.value}>{dob}</Text>
-        )}
-      </View>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
+                <Text style={styles.menuText}>Meine Patienten</Text>
+              </Pressable>
 
-      {/* Geschlecht */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Geschlecht</Text>
-        <Pressable onPress={() => {}}>
-          <Text style={styles.value}>{gender}</Text>
-        </Pressable>
-      </View>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
+                <Text style={styles.menuText}>Termine</Text>
+              </Pressable>
 
-      {/* Save */}
-      <Pressable style={styles.saveBtn} onPress={onSave}>
-        <Text style={styles.saveText}>Speichern</Text>
-      </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
+                <Text style={styles.menuText}>Chat</Text>
+              </Pressable>
 
-      {/* Bottom Tabs (Therapeut) */}
-      <View style={styles.tabs}>
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.replace("/therapist-home")}
-        >
-          <Ionicons name="home-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Startseite</Text>
-        </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
+                <Text style={styles.menuText}>Mein Profil</Text>
+              </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
-          <Ionicons name="chatbubbles-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Chat</Text>
-        </Pressable>
+              <View style={styles.menuDivider} />
 
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.push("/therapist-patients")}
-        >
-          <Ionicons name="people-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Patienten</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabActive}
-          onPress={() => router.replace("/therapist-profile")}
-        >
-          <Ionicons name="person" size={22} color="#111" />
-          <Text style={styles.tabTextActive}>Profile</Text>
-        </Pressable>
-      </View>
-
-      {/* ===================== MENU MODAL (نفس TherapistHome) ===================== */}
-      <Modal transparent visible={menuOpen} animationType="fade">
-        {/* Overlay: click to close */}
-        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          {/* Drawer: stop propagation */}
-          <Pressable style={styles.drawer} onPress={() => {}}>
-            <Text style={styles.menuTitle}>Menü:</Text>
-            <View style={styles.menuDivider} />
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
-              <Text style={styles.menuText}>Home</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-patients")}
-            >
-              <Text style={styles.menuText}>Meine Patienten</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-appointments")}
-            >
-              <Text style={styles.menuText}>Termine</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
-              <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
-              <Text style={styles.menuText}>Mein Profil</Text>
-            </Pressable>
-
-            <View style={styles.menuDivider} />
-
-            <Pressable
-              style={styles.logoutBtn}
-              onPress={() => {
-                setMenuOpen(false);
-                router.replace("/login-therapeut");
-              }}
-            >
-              <Text style={styles.logoutText}>abmelden</Text>
+              <Pressable
+                style={styles.logoutBtn}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.replace("/login-therapeut");
+                }}
+              >
+                <Text style={styles.logoutText}>abmelden</Text>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 58,
+  },
+
+  scrollContent: {
+    paddingTop: 14,
     paddingHorizontal: 22,
-    paddingBottom: 16,
+    paddingBottom: 150, 
   },
 
   brand: {
@@ -351,6 +350,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 10,
+
+    position: "absolute",
+    left: 16,
+    right: 16,
   },
 
   tab: {
@@ -378,7 +381,6 @@ const styles = StyleSheet.create({
     color: "#111",
   },
 
-  /* MENU MODAL */
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",

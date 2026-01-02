@@ -11,7 +11,8 @@ import {
   View,
 } from "react-native";
 
-import { getPatientById } from "./patientsApi";
+import { getPatientById, PATIENTS } from "./patientsApi";
+
 import { SessionNote, sessionsApi } from "./sessionsApi";
 
 type Draft = {
@@ -44,7 +45,7 @@ const patientId = (params.patientId ?? params.id) as string | undefined;
     note: "",
   });
 
-  // ✅ Load sessions for patient
+  // Load sessions for patient
   useEffect(() => {
     (async () => {
       try {
@@ -114,13 +115,16 @@ const patientId = (params.patientId ?? params.id) as string | undefined;
     setSessions((prev) => prev.filter((x) => x.id !== id));
   };
 
-  const headerRight = useMemo(() => {
-    return (
-      <Pressable onPress={openAdd} hitSlop={10} style={styles.addIconBtn}>
-        <Ionicons name="add-circle" size={28} color="#111" />
-      </Pressable>
-    );
-  }, [patientId]);
+const headerRight = useMemo(() => {
+  if (!patientId) return null;
+
+  return (
+    <Pressable onPress={openAdd} hitSlop={10} style={styles.addIconBtn}>
+      <Ionicons name="add-circle" size={28} color="#111" />
+    </Pressable>
+  );
+}, [patientId]);
+
 
   return (
     <View style={styles.container}>
@@ -142,50 +146,68 @@ const patientId = (params.patientId ?? params.id) as string | undefined;
 
         <Text style={styles.patientName}>{name}</Text>
 
-        {!patientId ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Kein Patient ausgewählt (patientId fehlt).</Text>
+      {!patientId ? (
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>Bitte Patient auswählen:</Text>
+
+    <View style={{ marginTop: 10 }}>
+      {PATIENTS.map((p) => (
+        <Pressable
+          key={p.id}
+          style={styles.patientPickRow}
+          onPress={() => router.replace(`/sitzungverlauf?patientId=${p.id}` as any)}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.pickName}>{p.name}</Text>
+            <Text style={styles.pickInfo}>{p.age} · {p.gender}</Text>
           </View>
-        ) : loading ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Lade Sitzungen...</Text>
+
+          <Ionicons name="chevron-forward" size={20} color="#333" />
+        </Pressable>
+      ))}
+    </View>
+  </View>
+) : loading ? (
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>Lade Sitzungen...</Text>
+  </View>
+) : sessions.length === 0 ? (
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>Noch keine Sitzungen / Notizen.</Text>
+    <Pressable style={styles.addBtn} onPress={openAdd}>
+      <Text style={styles.addText}>+ Notiz hinzufügen</Text>
+    </Pressable>
+  </View>
+) : (
+  <>
+    {sessions.map((s) => (
+      <View key={s.id} style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>{s.title}</Text>
+            <Text style={styles.cardDate}>{s.date}</Text>
           </View>
-        ) : sessions.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Noch keine Sitzungen / Notizen.</Text>
-            <Pressable style={styles.addBtn} onPress={openAdd}>
-              <Text style={styles.addText}>+ Notiz hinzufügen</Text>
+
+          <View style={styles.cardActions}>
+            <Pressable onPress={() => openEdit(s)} hitSlop={10}>
+              <Ionicons name="pencil" size={18} color="#111" />
+            </Pressable>
+            <Pressable onPress={() => deleteSession(s.id)} hitSlop={10}>
+              <Ionicons name="trash" size={18} color="#B00000" />
             </Pressable>
           </View>
-        ) : (
-          <>
-            {sessions.map((s) => (
-              <View key={s.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{s.title}</Text>
-                    <Text style={styles.cardDate}>{s.date}</Text>
-                  </View>
+        </View>
 
-                  <View style={styles.cardActions}>
-                    <Pressable onPress={() => openEdit(s)} hitSlop={10}>
-                      <Ionicons name="pencil" size={18} color="#111" />
-                    </Pressable>
-                    <Pressable onPress={() => deleteSession(s.id)} hitSlop={10}>
-                      <Ionicons name="trash" size={18} color="#B00000" />
-                    </Pressable>
-                  </View>
-                </View>
+        <Text style={styles.cardNote}>{s.note}</Text>
+      </View>
+    ))}
 
-                <Text style={styles.cardNote}>{s.note}</Text>
-              </View>
-            ))}
+    <Pressable style={styles.addBtnStandalone} onPress={openAdd}>
+      <Text style={styles.addText}>+ Notiz hinzufügen</Text>
+    </Pressable>
+  </>
+)}
 
-            <Pressable style={styles.addBtnStandalone} onPress={openAdd}>
-              <Text style={styles.addText}>+ Notiz hinzufügen</Text>
-            </Pressable>
-          </>
-        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -288,6 +310,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
+patientPickRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#E0E0E0",
+  borderRadius: 12,
+  padding: 12,
+  marginBottom: 10,
+},
+
+pickName: {
+  fontSize: 14,
+  fontWeight: "800",
+  color: "#111",
+},
+
+pickInfo: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#444",
+  marginTop: 2,
+},
 
   addBtnStandalone: {
     marginTop: 6,

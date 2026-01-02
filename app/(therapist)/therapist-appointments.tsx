@@ -27,7 +27,7 @@ type EditDraft = {
   id?: string;
   date: string;
   time: string;
-  patientId: string; // ✅ بدل patient (name)
+  patientId: string; 
   note: string;
 };
 
@@ -161,7 +161,7 @@ function MonthCalendar({
 export default function TherapistAppointments() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ✅ read query param ?date=YYYY-MM-DD
+  // read query param ?date=YYYY-MM-DD
   const params = useLocalSearchParams<{ date?: string }>();
 
   const [loading, setLoading] = useState(true);
@@ -340,7 +340,7 @@ export default function TherapistAppointments() {
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chat")}>
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
           <Ionicons name="chatbubbles-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
@@ -436,7 +436,7 @@ export default function TherapistAppointments() {
               />
             </View>
 
-            {/* ✅ Patient selection */}
+            {/* Patient selection */}
             <View style={styles.formField}>
               <Text style={styles.formLabel}>Patient</Text>
 
@@ -510,7 +510,7 @@ export default function TherapistAppointments() {
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chat")}>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
               <Text style={styles.menuText}>Chat</Text>
             </Pressable>
 

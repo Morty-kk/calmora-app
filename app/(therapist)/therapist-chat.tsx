@@ -12,57 +12,53 @@ import {
   View,
 } from "react-native";
 
-type Msg = {
-  id: string;
-  from: "patient" | "therapist";
-  text: string;
-  time: string;
+import { getChat, Msg, setChat } from "./chatStore";
+import { getPatientById } from "./patientsApi";
+
+
+const seedByPatient: Record<string, Msg[]> = {
+  p1: [
+    { id: "1", from: "patient", text: "Hallo Herr Bellamy, ich fühle mich in letzter Zeit sehr gestresst und weiß nicht genau warum.", time: "10:13" },
+    { id: "2", from: "therapist", text: "Danke, dass du das sagst. Kannst du mir ein bisschen genauer beschreiben, was dich im Moment am meisten belastet?", time: "10:14" },
+    { id: "3", from: "patient", text: "alles zu viel wird, Arbeit, Familie, alles zusammen Ich kann mich kaum entspannen", time: "10:14" },
+    { id: "4", from: "therapist", text: "wirklich schwer. Wir können gemeinsam schauen, was dir helfen könnte, etwas Ruhe und Kontrolle zurückzubekommen", time: "10:15" },
+    { id: "5", from: "patient", text: "Das wäre gut. Ich möchte wirklich lernen, besser damit umzugehen.", time: "10:16" },
+  ],
+  p2: [
+    { id: "a1", from: "patient", text: "Ich hatte heute wieder Angstgefühle, vor allem am Abend.", time: "09:35" },
+    { id: "a2", from: "therapist", text: "Okay. Lass uns schauen, welche Situationen das auslösen. Was war kurz davor?", time: "09:36" },
+  ],
 };
 
 export default function TherapistChat() {
-  const params = useLocalSearchParams<{ name?: string }>();
-  const chatName = params.name ?? "Karl Heinz";
+  const params = useLocalSearchParams<{ patientId?: string; name?: string }>();
+  const patientId = (params.patientId ?? "p1") as string;
+
+  const chatName = useMemo(() => {
+    if (params.name) return params.name;
+    return getPatientById(patientId)?.name ?? "Patient";
+  }, [params.name, patientId]);
 
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
 
-  const [messages, setMessages] = useState<Msg[]>(
-    useMemo(
-      () => [
-        {
-          id: "1",
-          from: "patient",
-          text: "Hallo Herr Bellamy, ich fühle mich in letzter Zeit sehr gestresst und weiß nicht genau warum.",
-          time: "10:13",
-        },
-        {
-          id: "2",
-          from: "therapist",
-          text: "Danke, dass du das sagst. Kannst du mir ein bisschen genauer beschreiben, was dich im Moment am meisten belastet?",
-          time: "10:14",
-        },
-        {
-          id: "3",
-          from: "patient",
-          text: "alles zu viel wird, Arbeit, Familie, alles zusammen Ich kann mich kaum entspannen",
-          time: "10:14",
-        },
-        {
-          id: "4",
-          from: "therapist",
-          text: "wirklich schwer. Wir können gemeinsam schauen, was dir helfen könnte, etwas Ruhe und Kontrolle zurückzubekommen",
-          time: "10:15",
-        },
-        {
-          id: "5",
-          from: "patient",
-          text: "Das wäre gut. Ich möchte wirklich lernen, besser damit umzugehen.",
-          time: "10:16",
-        },
-      ],
-      []
-    )
-  );
+  const [messages, setMessagesState] = useState<Msg[]>(() => {
+    const existing = getChat(patientId);
+    if (existing.length > 0) return existing;
+
+    const seeded = seedByPatient[patientId] ?? [];
+    if (seeded.length > 0) setChat(patientId, seeded);
+    return seeded;
+  });
+
+  // كل تحديث ينحفظ بالـ store
+  const setMessages = (updater: (prev: Msg[]) => Msg[]) => {
+    setMessagesState((prev) => {
+      const next = updater(prev);
+      setChat(patientId, next);
+      return next;
+    });
+  };
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -80,15 +76,15 @@ export default function TherapistChat() {
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        from: "therapist",
-        text: trimmed,
-        time: `${hh}:${mm}`,
-      },
-    ]);
+    const msg: Msg = {
+      id: String(Date.now()),
+      from: "therapist",
+      text: trimmed,
+      time: `${hh}:${mm}`,
+    };
+
+    setMessages((prev) => [...prev, msg]);
+
     setInput("");
     setTyping(false);
     scrollToEnd();
@@ -128,12 +124,7 @@ export default function TherapistChat() {
           const isTherapist = m.from === "therapist";
           return (
             <View key={m.id} style={styles.msgBlock}>
-              <View
-                style={[
-                  styles.bubble,
-                  isTherapist ? styles.rightBubble : styles.leftBubble,
-                ]}
-              >
+              <View style={[styles.bubble, isTherapist ? styles.rightBubble : styles.leftBubble]}>
                 <Text style={styles.bubbleText}>{m.text}</Text>
               </View>
 
@@ -144,7 +135,8 @@ export default function TherapistChat() {
           );
         })}
 
-        <Text style={styles.typingText}>{typing ? `${chatName} schreibt...` : ""}</Text>
+     
+        <Text style={styles.typingText}>{typing ? "Du schreibst..." : ""}</Text>
       </ScrollView>
 
       {/* Input Bar */}
@@ -159,7 +151,7 @@ export default function TherapistChat() {
           value={input}
           onChangeText={(t) => {
             setInput(t);
-            setTyping(true);
+            setTyping(t.trim().length > 0); 
           }}
           onSubmitEditing={send}
           returnKeyType="send"
@@ -195,75 +187,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  headerCenter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+  headerCenter: { flexDirection: "row", alignItems: "center", gap: 10 },
 
-  avatarSmall: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#D9D9D9",
-  },
+  avatarSmall: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#D9D9D9" },
 
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
-  },
+  headerTitle: { fontSize: 16, fontWeight: "700", color: "#111" },
 
   chatArea: { flex: 1 },
 
-  chatContent: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    paddingBottom: 18,
-  },
+  chatContent: { paddingHorizontal: 14, paddingVertical: 14, paddingBottom: 18 },
 
   msgBlock: { marginBottom: 10 },
 
-  bubble: {
-    maxWidth: "78%",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
+  bubble: { maxWidth: "78%", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  leftBubble: { alignSelf: "flex-start", backgroundColor: "#9E9E9E" },
+  rightBubble: { alignSelf: "flex-end", backgroundColor: "#F1F1F1" },
 
-  leftBubble: {
-    alignSelf: "flex-start",
-    backgroundColor: "#9E9E9E",
-  },
+  bubbleText: { fontSize: 13, color: "#111", fontWeight: "600", lineHeight: 18 },
 
-  rightBubble: {
-    alignSelf: "flex-end",
-    backgroundColor: "#F1F1F1",
-  },
-
-  bubbleText: {
-    fontSize: 13,
-    color: "#111",
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-
-  time: {
-    fontSize: 11,
-    color: "#3B5BA9",
-    marginTop: 4,
-    opacity: 0.85,
-  },
-
+  time: { fontSize: 11, color: "#3B5BA9", marginTop: 4, opacity: 0.85 },
   timeLeft: { alignSelf: "flex-start" },
   timeRight: { alignSelf: "flex-end" },
 
-  typingText: {
-    marginTop: 6,
-    fontSize: 12,
-    color: "#3B5BA9",
-    opacity: 0.7,
-  },
+  typingText: { marginTop: 6, fontSize: 12, color: "#3B5BA9", opacity: 0.7 },
 
   inputRow: {
     flexDirection: "row",
