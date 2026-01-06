@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   ImageBackground,
   ScrollView,
@@ -23,6 +24,7 @@ export default function RegisterPatient() {
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [showError, setShowError] = useState(false);
+  const { register, loading } = useAuth();
 
   const onRegister = async () => {
     if (!agreed) {
@@ -32,22 +34,30 @@ export default function RegisterPatient() {
 
     setShowError(false);
 
-    const userData = {
-      name: firstName + " " + lastName,
-      phone,
-      birthdate,
-      gender,
-      email,
-    };
-
-    try {
-      await AsyncStorage.setItem("user", JSON.stringify(userData));
-      console.log("Benutzer gespeichert:", userData);
-    } catch (e) {
-      console.error("Fehler beim Speichern", e);
+    if (!email || !password) {
+      setShowError(true);
+      return;
     }
 
-    router.push("/menu");
+    try {
+      await register({
+        email,
+        password,
+        phoneNumber: phone,
+        role: "PATIENT",
+      });
+      const userData = {
+        name: firstName + " " + lastName,
+        phone,
+        birthdate,
+        gender,
+        email,
+      };
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
+      router.push("/menu");
+    } catch (e) {
+      // Fehler werden bereits im AuthContext behandelt
+    }
   };
 
   return (
@@ -184,9 +194,9 @@ export default function RegisterPatient() {
 
           {/* Register button */}
           <TouchableOpacity
-            style={[styles.registerBtn, !agreed && styles.registerBtnDisabled]}
+            style={[styles.registerBtn, (!agreed || loading) && styles.registerBtnDisabled]}
             onPress={onRegister}
-            disabled={!agreed}
+            disabled={!agreed || loading}
           >
             <Text style={styles.registerText}>registrieren</Text>
           </TouchableOpacity>

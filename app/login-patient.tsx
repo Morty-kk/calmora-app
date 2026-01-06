@@ -14,19 +14,26 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
 
 export default function PatientLogin() {
   const [modalVisible, setModalVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login, loading } = useAuth();
 
   const onLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Bitte ausfüllen", "E-Mail und Passwort eingeben.");
       return;
     }
-    // TODO: echte Auth integrieren; bei Erfolg:
-    router.replace("/menu"); // Patient-Home nach Login
+
+    try {
+      await login({ email, password });
+      router.replace("/menu");
+    } catch (error) {
+      // Fehler wird bereits im AuthContext angezeigt
+    }
   };
 
   return (
@@ -81,9 +88,13 @@ export default function PatientLogin() {
           </TouchableOpacity>
 
           {/* Login Button */}
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/menu")}>
-                    <Text style={styles.buttonText}>Login</Text>
-                  </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.8 }]}
+            onPress={onLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
 
           {/* Register Link */}
           <TouchableOpacity onPress={() => router.replace("/registerpatient")}>

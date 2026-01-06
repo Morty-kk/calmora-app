@@ -1,0 +1,26 @@
+{
+  "name": "calmora-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "node node_modules/typescript/bin/tsc --watch --project tsconfig.json & nodemon --watch dist dist/index.js",
+    "build": "node node_modules/typescript/bin/tsc --project tsconfig.json",
+    "start": "node dist/index.js",
+    "prisma": "prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0",
+    "typescript": "^5.6.3"
+  }
+}

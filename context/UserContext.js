@@ -5,8 +5,9 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const [user, setUser] = useState({
     id: null,
-    name: 'Karl Beispiel',
     email: '',
+    phoneNumber: null,
+    role: null,
   });
 
   const value = useMemo(() => ({ user, setUser }), [user]);
