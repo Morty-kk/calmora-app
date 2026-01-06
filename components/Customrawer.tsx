@@ -1,4 +1,4 @@
-import { DrawerContentComponentProps } from "@react-navigation/drawer";
+import type { NavigationProp } from "@react-navigation/native";
 import React from "react";
 import {
     SafeAreaView,
@@ -9,7 +9,8 @@ import {
     View,
 } from "react-native";
 
-type Props = DrawerContentComponentProps & {
+type Props = {
+  navigation: NavigationProp<Record<string, object | undefined>>;
   onLogout?: () => void;
 };
 

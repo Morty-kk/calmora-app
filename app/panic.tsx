@@ -20,7 +20,7 @@ export default function PanicScreen() {
   const [totalRemaining, setTotalRemaining] = useState(TOTAL_RELAX_SECONDS);
 
   const scale = useRef(new Animated.Value(1)).current;
-  const intervalRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Kreis-Animation
   useEffect(() => {

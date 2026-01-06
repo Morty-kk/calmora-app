@@ -10,11 +10,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
 
 export default function TherapeutLogin() {
   const [modalVisible, setModalVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login, loading } = useAuth();
+
+  const handleLogin = async () => {
+    try {
+      await login({ email, password });
+      router.replace("/therapist-home");
+    } catch (error) {
+      // Fehler wird bereits im AuthContext angezeigt
+    }
+  };
 
   return (
     <ImageBackground
@@ -65,8 +76,9 @@ export default function TherapeutLogin() {
 
         {/* ✅ LOGIN BUTTON – DAS WAR DER FEHLER */}
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.replace("/therapist-home")}
+          style={[styles.button, loading && { opacity: 0.8 }]}
+          onPress={handleLogin}
+          disabled={loading}
         >
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>

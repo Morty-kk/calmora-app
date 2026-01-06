@@ -1,69 +1,92 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { fetchCurrentUser, loginUser, registerUser } from '../services/api';
 import { useUser } from './UserContext';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
+const TOKEN_KEY = 'calmora-auth-token';
 
-const mockUserProfile = (overrides = {}) => ({
-  id: 'mock-user-id',
-  name: 'Karl Beispiel',
-  email: overrides.email || 'karl@example.com',
-  role: overrides.role || 'Patient',
-  ...overrides,
-});
+async function storeToken(token) {
+  await AsyncStorage.setItem(TOKEN_KEY, token);
+}
+
+async function readToken() {
+  return AsyncStorage.getItem(TOKEN_KEY);
+}
+
+async function clearToken() {
+  await AsyncStorage.removeItem(TOKEN_KEY);
+}
 
 export function AuthProvider({ children }) {
   const { setUser } = useUser();
   const [role, setRole] = useState(null);
   const [token, setToken] = useState(null);
-  const [isVerified, setIsVerified] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleAuthSuccess = useCallback(
-    (userProfile) => {
-      const profile = mockUserProfile(userProfile);
-      setUser(profile);
-      setToken('mock-token');
-      setRole(profile.role);
+  const syncUser = useCallback(
+    async (activeToken) => {
+      const response = await fetchCurrentUser(activeToken);
+      setUser(response.user);
+      setRole(response.user.role);
+      return response.user;
     },
     [setUser]
   );
 
-  const login = useCallback(
-    async ({ email, password, selectedRole }) => {
-      setLoading(true);
-      try {
-        if (!email || !password) {
-          throw new Error('Bitte fülle alle erforderlichen Felder aus.');
+  useEffect(() => {
+    const bootstrap = async () => {
+      const storedToken = await readToken();
+      if (storedToken) {
+        setToken(storedToken);
+        try {
+          await syncUser(storedToken);
+        } catch (error) {
+          await clearToken();
+          setToken(null);
         }
-
-        // Placeholder for supabase.auth.signInWithPassword()
-        handleAuthSuccess({ email, role: selectedRole || role || 'Patient' });
-        setIsVerified(true);
-      } catch (error) {
-        Alert.alert('Anmeldung fehlgeschlagen', error.message);
-        throw error;
-      } finally {
-        setLoading(false);
       }
+      setInitializing(false);
+    };
+
+    bootstrap();
+  }, [syncUser]);
+
+  const handleAuthSuccess = useCallback(
+    async (payload) => {
+      await storeToken(payload.token);
+      setToken(payload.token);
+      setUser(payload.user);
+      setRole(payload.user.role);
+      return payload.user;
     },
-    [handleAuthSuccess, role]
+    [setUser]
   );
 
   const register = useCallback(
-    async ({ email, password, profile }) => {
+    async ({ email, password, phoneNumber, role: desiredRole }) => {
       setLoading(true);
       try {
-        if (!email || !password) {
-          throw new Error('Bitte gib eine gültige E-Mail und ein Passwort ein.');
-        }
-
-        // Placeholder for supabase.auth.signUp()
-        handleAuthSuccess({ email, role: profile?.role || role || 'Patient', ...profile });
-        setIsVerified(false);
+        const payload = await registerUser({
+          email,
+          password,
+          phoneNumber,
+          role: desiredRole || role || 'PATIENT',
+        });
+        await handleAuthSuccess(payload);
+        return payload.user;
       } catch (error) {
-        Alert.alert('Registrierung fehlgeschlagen', error.message);
+        Alert.alert('Registrierung fehlgeschlagen', error.message || 'Bitte erneut versuchen.');
         throw error;
       } finally {
         setLoading(false);
@@ -72,47 +95,43 @@ export function AuthProvider({ children }) {
     [handleAuthSuccess, role]
   );
 
-  const verifyOTP = useCallback(
-    async (code) => {
+  const login = useCallback(
+    async ({ email, password }) => {
       setLoading(true);
       try {
-        if (!code || (code.length !== 4 && code.length !== 6)) {
-          throw new Error('Der Code muss 4 oder 6 Stellen haben.');
-        }
-
-        // Placeholder for supabase.auth.verifyOTP()
-        setIsVerified(true);
+        const payload = await loginUser({ email, password });
+        await handleAuthSuccess(payload);
+        return payload.user;
       } catch (error) {
-        Alert.alert('Verifizierung fehlgeschlagen', error.message);
+        Alert.alert('Anmeldung fehlgeschlagen', error.message || 'Bitte erneut versuchen.');
         throw error;
       } finally {
         setLoading(false);
       }
     },
-    []
+    [handleAuthSuccess]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await clearToken();
     setToken(null);
     setRole(null);
-    setIsVerified(false);
-    setUser({ id: null, name: '', email: '' });
+    setUser({ id: null, email: '', phoneNumber: null, role: null });
   }, [setUser]);
 
   const value = useMemo(
     () => ({
       loading,
+      initializing,
       token,
       role,
-      isVerified,
-      isAuthenticated: Boolean(token && isVerified),
-      setRole,
+      isAuthenticated: Boolean(token),
       login,
       logout,
       register,
-      verifyOTP,
+      refreshUser: syncUser,
     }),
-    [loading, token, role, isVerified, login, logout, register, verifyOTP]
+    [loading, initializing, token, role, login, logout, register, syncUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
