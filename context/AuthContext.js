@@ -1,127 +1,130 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { useUser } from './UserContext';
+import { login as apiLogin, register as apiRegister } from '../services/api';
 
-const AuthContext = createContext();
-
-const mockUserProfile = (overrides = {}) => ({
-  id: 'mock-user-id',
-  name: 'Karl Beispiel',
-  email: overrides.email || 'karl@example.com',
-  role: overrides.role || 'Patient',
-  ...overrides,
-});
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const { setUser } = useUser();
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [role, setRole] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleAuthSuccess = useCallback(
-    (userProfile) => {
-      const profile = mockUserProfile(userProfile);
-      setUser(profile);
-      setToken('mock-token');
-      setRole(profile.role);
-    },
-    [setUser]
-  );
-
-  const login = useCallback(
-    async ({ email, password, selectedRole }) => {
-      setLoading(true);
+  /**
+   * Restore session on app start
+   */
+  useEffect(() => {
+    const restoreSession = async () => {
       try {
-        if (!email || !password) {
-          throw new Error('Bitte fülle alle erforderlichen Felder aus.');
-        }
+        const storedToken = await AsyncStorage.getItem('token');
+        const storedUser = await AsyncStorage.getItem('user');
 
-        // Placeholder for supabase.auth.signInWithPassword()
-        handleAuthSuccess({ email, role: selectedRole || role || 'Patient' });
-        setIsVerified(true);
-      } catch (error) {
-        Alert.alert('Anmeldung fehlgeschlagen', error.message);
-        throw error;
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          setRole(JSON.parse(storedUser).role);
+          setIsVerified(true);
+        }
       } finally {
         setLoading(false);
       }
-    },
-    [handleAuthSuccess, role]
-  );
+    };
 
+    restoreSession();
+  }, []);
+
+  /**
+   * LOGIN
+   */
+  const login = useCallback(async ({ email, password }) => {
+    setLoading(true);
+    try {
+      const data = await apiLogin({ email, password });
+
+      const roleName = data.roles?.[0] || 'PATIENT';
+
+      const profile = {
+        id: data.user.id,
+        email: data.user.email,
+        role: roleName === 'THERAPIST' ? 'Therapist' : 'Patient',
+      };
+
+      setUser(profile);
+      setToken(data.token);
+      setRole(profile.role);
+      setIsVerified(true);
+
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(profile));
+    } catch (e) {
+      Alert.alert('Login fehlgeschlagen', e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * REGISTER
+   */
   const register = useCallback(
     async ({ email, password, profile }) => {
       setLoading(true);
       try {
-        if (!email || !password) {
-          throw new Error('Bitte gib eine gültige E-Mail und ein Passwort ein.');
-        }
+        const role = profile?.role === 'Therapist' ? 'THERAPIST' : 'PATIENT';
 
-        // Placeholder for supabase.auth.signUp()
-        handleAuthSuccess({ email, role: profile?.role || role || 'Patient', ...profile });
-        setIsVerified(false);
-      } catch (error) {
-        Alert.alert('Registrierung fehlgeschlagen', error.message);
-        throw error;
+        await apiRegister({ email, password, role });
+
+        // direkt einloggen
+        await login({ email, password });
+      } catch (e) {
+        Alert.alert('Registrierung fehlgeschlagen', e.message);
+        throw e;
       } finally {
         setLoading(false);
       }
     },
-    [handleAuthSuccess, role]
+    [login]
   );
 
-  const verifyOTP = useCallback(
-    async (code) => {
-      setLoading(true);
-      try {
-        if (!code || (code.length !== 4 && code.length !== 6)) {
-          throw new Error('Der Code muss 4 oder 6 Stellen haben.');
-        }
-
-        // Placeholder for supabase.auth.verifyOTP()
-        setIsVerified(true);
-      } catch (error) {
-        Alert.alert('Verifizierung fehlgeschlagen', error.message);
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const logout = useCallback(() => {
+  /**
+   * LOGOUT
+   */
+  const logout = useCallback(async () => {
+    setUser(null);
     setToken(null);
     setRole(null);
     setIsVerified(false);
-    setUser({ id: null, name: '', email: '' });
-  }, [setUser]);
 
-  const value = useMemo(
-    () => ({
-      loading,
-      token,
-      role,
-      isVerified,
-      isAuthenticated: Boolean(token && isVerified),
-      setRole,
-      login,
-      logout,
-      register,
-      verifyOTP,
-    }),
-    [loading, token, role, isVerified, login, logout, register, verifyOTP]
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        role,
+        isVerified,
+        loading,
+        login,
+        register,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
-  return context;
+  return ctx;
 }
