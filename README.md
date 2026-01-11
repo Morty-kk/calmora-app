@@ -16,6 +16,50 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Backend (Chat API)
+
+### .env Beispiel (Backend)
+
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/calmora"
+JWT_SECRET="change-me"
+PORT=4000
+```
+
+### Backend starten
+
+```bash
+cd calmora-backend
+npm install
+npm run prisma migrate dev
+npm run seed
+npm run dev
+```
+
+Seed-User: `patient@example.com` / `therapist@example.com` mit Passwort `Password123!`.
+
+### Frontend starten
+
+```bash
+npm install
+npx expo start
+```
+
+### API-Übersicht
+
+**Auth**
+
+- `POST /auth/register` – `{ email, password, role }`
+- `POST /auth/login` – `{ email, password }`
+
+**Chat (JWT erforderlich)**
+
+- `POST /chat/conversations`
+- `GET /chat/conversations`
+- `GET /chat/conversations/:id/messages`
+- `POST /chat/conversations/:id/messages`
+- `PATCH /chat/messages/:id/read`
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

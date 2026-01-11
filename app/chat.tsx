@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,77 +7,134 @@ import {
   TextInput,
   ImageBackground,
   Pressable,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
-type Message = {
-  id: string;
-  text: string;
-  from: "user" | "therapist";
-  time: string;
-};
+import { useAuth } from "../context/AuthContext";
+import { ChatMessage, getConversationMessages, markMessageRead, sendMessage } from "../services/api";
 
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    text: "Hallo Herr Bellamy, ich fühle mich in letzter Zeit sehr gestresst und weiß nicht genau warum.",
-    from: "user",
-    time: "10:13",
-  },
-  {
-    id: "2",
-    text: "Danke, dass du das sagst. Kannst du mir ein bisschen genauer beschreiben, was dich im Moment am meisten belastet?",
-    from: "therapist",
-    time: "10:14",
-  },
-  {
-    id: "3",
-    text: "Alles zu viel wird, Arbeit, Familie, alles zusammen. Ich kann mich kaum entspannen.",
-    from: "user",
-    time: "10:14",
-  },
-  {
-    id: "4",
-    text: "Wirklich schwer. Wir können gemeinsam schauen, was dir helfen könnte, etwas Ruhe und Kontrolle zurückzubekommen.",
-    from: "therapist",
-    time: "10:15",
-  },
-  {
-    id: "5",
-    text: "Das wäre gut. Ich möchte wirklich lernen, besser damit umzugehen.",
-    from: "user",
-    time: "10:16",
-  },
-];
+const PAGE_SIZE = 30;
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState("");
+  const { token, user } = useAuth();
+  const { conversationId, partnerEmail } = useLocalSearchParams();
+  const normalizedConversationId = Array.isArray(conversationId) ? conversationId[0] : conversationId;
+  const normalizedPartnerEmail = Array.isArray(partnerEmail) ? partnerEmail[0] : partnerEmail;
+  const conversationIdNumber = useMemo(() => Number(normalizedConversationId), [normalizedConversationId]);
+  const invalidConversation = Number.isNaN(conversationIdNumber) || conversationIdNumber <= 0;
 
-  const handleSend = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const loadMessages = useCallback(
+    async (options: { cursor?: number; append?: boolean } = {}) => {
+      if (!token || invalidConversation) return;
+      if (!options.append) {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const data = await getConversationMessages(token, conversationIdNumber, {
+          limit: PAGE_SIZE,
+          cursor: options.cursor,
+        });
+        setNextCursor(data.nextCursor);
+        setMessages((prev) => {
+          if (options.append) {
+            return [...prev, ...data.messages];
+          }
+          if (prev.length === 0) {
+            return data.messages;
+          }
+          const latestIds = new Set(data.messages.map((message) => message.id));
+          const preserved = prev.filter((message) => !latestIds.has(message.id));
+          return [...data.messages, ...preserved];
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Nachrichten konnten nicht geladen werden.");
+      } finally {
+        if (!options.append) {
+          setLoading(false);
+        }
+      }
+    },
+    [conversationIdNumber, token]
+  );
+
+  useEffect(() => {
+    if (!token) {
+      setError("Bitte anmelden, um Nachrichten zu sehen.");
+      setLoading(false);
+      return;
+    }
+    if (invalidConversation) {
+      setError("Ungültige Unterhaltung.");
+      setLoading(false);
+      return;
+    }
+    loadMessages();
+  }, [invalidConversation, loadMessages]);
+
+  useEffect(() => {
+    if (!token || invalidConversation) return;
+    const interval = setInterval(() => {
+      loadMessages();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [conversationIdNumber, loadMessages, token]);
+
+  useEffect(() => {
+    if (!token || !user?.id) return;
+    const unread = messages.filter((message) => !message.readAt && message.senderId !== user.id);
+    unread.forEach((message) => {
+      markMessageRead(token, message.id).catch(() => null);
+    });
+  }, [messages, token, user?.id]);
+
+  const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
+    if (!token || invalidConversation || sending) return;
 
-    const now = new Date();
-    const time = now.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      from: "user",
-      time,
+    const tempId = Date.now() * -1;
+    const optimisticMessage: ChatMessage = {
+      id: tempId,
+      conversationId: conversationIdNumber,
+      senderId: user?.id ?? 0,
+      content: text,
+      createdAt: new Date().toISOString(),
+      readAt: null,
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [optimisticMessage, ...prev]);
     setInput("");
+    setSending(true);
+
+    try {
+      const data = await sendMessage(token, conversationIdNumber, { content: text });
+      setMessages((prev) =>
+        prev.map((message) => (message.id === tempId ? data.message : message))
+      );
+    } catch (err) {
+      setMessages((prev) => prev.filter((message) => message.id !== tempId));
+      setError(err instanceof Error ? err.message : "Nachricht konnte nicht gesendet werden.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -92,7 +149,7 @@ export default function ChatScreen() {
           source={require("../assets/profile-placeholder.jpg")}
           style={styles.avatar}
         />
-        <Text style={styles.name}>Herr Bellamy N</Text>
+        <Text style={styles.name}>{normalizedPartnerEmail || "Chat"}</Text>
 
         <Ionicons
           name="call"
@@ -113,33 +170,45 @@ export default function ChatScreen() {
           style={styles.chatArea}
           resizeMode="cover"
         >
-          <ScrollView
-            contentContainerStyle={styles.messagesContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {messages.map((m) => {
-              const isUser = m.from === "user";
-              return (
-                <View
-                  key={m.id}
-                  style={[
-                    styles.bubble,
-                    isUser ? styles.rightBubble : styles.leftBubble,
-                  ]}
-                >
-                  <Text style={isUser ? styles.rightText : styles.leftText}>
-                    {m.text}
-                  </Text>
-                  <Text
-                    style={isUser ? styles.timeRight : styles.timeLeft}
-                  >{`${m.time}${isUser ? " ✓" : ""}`}</Text>
-                </View>
-              );
-            })}
-
-            {/* Schreib-Status (optional, immer sichtbar) */}
-            <Text style={styles.typing}>Herr Bellamy schreibt…</Text>
-          </ScrollView>
+          {loading ? (
+            <View style={styles.centered}>
+              <ActivityIndicator size="small" color="#7C6FB3" />
+            </View>
+          ) : error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : messages.length === 0 ? (
+            <Text style={styles.emptyText}>Noch keine Nachrichten.</Text>
+          ) : (
+            <FlatList
+              data={messages}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => {
+                const isUser = item.senderId === user?.id;
+                return (
+                  <View
+                    style={[
+                      styles.bubble,
+                      isUser ? styles.rightBubble : styles.leftBubble,
+                    ]}
+                  >
+                    <Text style={isUser ? styles.rightText : styles.leftText}>{item.content}</Text>
+                    <Text style={isUser ? styles.timeRight : styles.timeLeft}>
+                      {`${formatTime(item.createdAt)}${isUser ? " ✓" : ""}`}
+                    </Text>
+                  </View>
+                );
+              }}
+              inverted
+              contentContainerStyle={styles.messagesContainer}
+              showsVerticalScrollIndicator={false}
+              onEndReached={() => {
+                if (nextCursor) {
+                  loadMessages({ cursor: nextCursor, append: true });
+                }
+              }}
+              onEndReachedThreshold={0.4}
+            />
+          )}
         </ImageBackground>
 
         {/* EINGABE-LEISTE */}
@@ -223,11 +292,6 @@ const styles = StyleSheet.create({
     color: "#555",
     marginTop: 4,
   },
-  typing: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 8,
-  },
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -242,5 +306,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     fontSize: 14,
+  },
+  centered: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  emptyText: {
+    marginTop: 20,
+    color: "#7C6FB3",
+    textAlign: "center",
+  },
+  errorText: {
+    marginTop: 20,
+    color: "#B00020",
+    textAlign: "center",
   },
 });

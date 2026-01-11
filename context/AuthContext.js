@@ -44,12 +44,10 @@ export function AuthProvider({ children }) {
     try {
       const data = await apiLogin({ email, password });
 
-      const roleName = data.roles?.[0] || 'PATIENT';
-
       const profile = {
         id: data.user.id,
         email: data.user.email,
-        role: roleName === 'THERAPIST' ? 'Therapist' : 'Patient',
+        role: data.user.role === 'THERAPIST' ? 'Therapist' : 'Patient',
       };
 
       setUser(profile);

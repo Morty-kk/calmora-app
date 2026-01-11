@@ -37,15 +37,82 @@ export async function apiFetch<T = any>(
 }
 
 export function register(input: { email: string; password: string; role: "PATIENT" | "THERAPIST" }) {
-  return apiFetch<{ message: string; userId: string }>("/auth/register", {
+  return apiFetch<{ message: string; userId: number }>("/auth/register", {
     method: "POST",
     body: input,
   });
 }
 
 export function login(input: { email: string; password: string }) {
-  return apiFetch<{ token: string; user: { id: string; email: string; roles?: string[] } }>("/auth/login", {
+  return apiFetch<{ token: string; user: { id: number; email: string; role: "PATIENT" | "THERAPIST" } }>("/auth/login", {
     method: "POST",
     body: input,
+  });
+}
+
+export type ChatUser = { id: number; email: string; role: "PATIENT" | "THERAPIST" };
+
+export type ChatMessage = {
+  id: number;
+  conversationId: number;
+  senderId: number;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+  type?: string | null;
+  metadata?: unknown;
+};
+
+export type Conversation = {
+  id: number;
+  patientId: number;
+  therapistId: number;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageAt: string | null;
+  patient: ChatUser;
+  therapist: ChatUser;
+  lastMessage: ChatMessage | null;
+};
+
+export function getConversations(token: string) {
+  return apiFetch<{ conversations: Conversation[] }>("/chat/conversations", {
+    token,
+  });
+}
+
+export function getConversationMessages(
+  token: string,
+  conversationId: number,
+  params: { cursor?: number; limit?: number } = {}
+) {
+  const searchParams = new URLSearchParams();
+  if (params.cursor) {
+    searchParams.set("cursor", String(params.cursor));
+  }
+  if (params.limit) {
+    searchParams.set("limit", String(params.limit));
+  }
+  const query = searchParams.toString();
+  return apiFetch<{ messages: ChatMessage[]; nextCursor: number | null }>(
+    `/chat/conversations/${conversationId}/messages${query ? `?${query}` : ""}`,
+    {
+      token,
+    }
+  );
+}
+
+export function sendMessage(token: string, conversationId: number, payload: { content: string }) {
+  return apiFetch<{ message: ChatMessage }>(`/chat/conversations/${conversationId}/messages`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export function markMessageRead(token: string, messageId: number) {
+  return apiFetch<{ message: ChatMessage }>(`/chat/messages/${messageId}/read`, {
+    method: "PATCH",
+    token,
   });
 }
