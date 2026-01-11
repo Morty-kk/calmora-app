@@ -1,11 +1,90 @@
-import { View, Text, Pressable, Image, StyleSheet } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Text, Pressable, Image, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+
+import { useAuth } from "../context/AuthContext";
+import { Conversation, getConversations } from "../services/api";
+
+function formatTimestamp(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
 
 export default function ChatList() {
+  const { token, user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadConversations = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getConversations(token);
+      setConversations(data.conversations);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Chats konnten nicht geladen werden.");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadConversations();
+    }, [loadConversations])
+  );
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(loadConversations, 4000);
+    return () => clearInterval(interval);
+  }, [loadConversations, token]);
+
+  const renderItem = ({ item }: { item: Conversation }) => {
+    const partner = user?.role === "Therapist" ? item.patient : item.therapist;
+    const lastMessageText = item.lastMessage?.content || "Keine Nachrichten";
+    const timeLabel = item.lastMessage?.createdAt ? formatTimestamp(item.lastMessage.createdAt) : "";
+
+    return (
+      <Pressable
+        style={styles.row}
+        onPress={() =>
+          router.push({
+            pathname: "/chat",
+            params: { conversationId: item.id.toString(), partnerEmail: partner.email },
+          })
+        }
+      >
+        <Image source={require("../assets/profile-placeholder.jpg")} style={styles.avatar} />
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{partner.email}</Text>
+          <Text style={styles.status} numberOfLines={1}>
+            {lastMessageText}
+          </Text>
+        </View>
+
+        <View style={styles.meta}>
+          {timeLabel ? <Text style={styles.time}>{timeLabel}</Text> : null}
+        </View>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} />
@@ -18,23 +97,22 @@ export default function ChatList() {
 
       <Text style={styles.subtitle}>Chatliste</Text>
 
-      {/* CHAT EINTRAG */}
-      <Pressable
-        style={styles.row}
-        onPress={() => router.push("/chat")}
-      >
-        <Image
-          source={require("../assets/profile-placeholder.jpg")}
-          style={styles.avatar}
-        />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>Herr Bellamy N</Text>
-          <Text style={styles.status}>Termin vor 10 Tagen</Text>
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="small" color="#7C6FB3" />
         </View>
-
-        <View style={styles.onlineDot} />
-      </Pressable>
+      ) : error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : conversations.length === 0 ? (
+        <Text style={styles.emptyText}>Keine Unterhaltungen gefunden.</Text>
+      ) : (
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </View>
   );
 }
@@ -66,6 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8E3D7",
     borderRadius: 14,
     padding: 12,
+    marginBottom: 12,
   },
   avatar: {
     width: 48,
@@ -81,10 +160,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
   },
-  onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "limegreen",
+  listContent: {
+    paddingBottom: 20,
+  },
+  meta: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+    minWidth: 60,
+  },
+  time: {
+    fontSize: 12,
+    color: "#7C6FB3",
+  },
+  centered: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  emptyText: {
+    marginTop: 20,
+    color: "#7C6FB3",
+  },
+  errorText: {
+    marginTop: 20,
+    color: "#B00020",
   },
 });
