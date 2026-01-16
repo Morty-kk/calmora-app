@@ -1,6 +1,7 @@
 // app/login-patient.tsx
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   ImageBackground,
@@ -15,18 +16,49 @@ import {
   View,
 } from "react-native";
 
+import { BACKEND_URL } from "../constants/backend";
+
 export default function PatientLogin() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("patient@example.com"); // للعرض: قيمة افتراضية
+  const [password, setPassword] = useState("Password123!"); // للعرض: قيمة افتراضية
+  const [loading, setLoading] = useState(false);
 
   const onLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Bitte ausfüllen", "E-Mail und Passwort eingeben.");
       return;
     }
-    // TODO: echte Auth integrieren; bei Erfolg:
-    router.replace("/menu"); // Patient-Home nach Login
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert(
+          "Login fehlgeschlagen",
+          data?.error || data?.message || "Unbekannter Fehler"
+        );
+        return;
+      }
+
+      // token + user speichern
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+      router.replace("/menu");
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Fehler", "Server nicht erreichbar. Bitte Backend prüfen.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,9 +113,15 @@ export default function PatientLogin() {
           </TouchableOpacity>
 
           {/* Login Button */}
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/menu")}>
-                    <Text style={styles.buttonText}>Login</Text>
-                  </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.6 }]}
+            onPress={onLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? "..." : "Login"}
+            </Text>
+          </TouchableOpacity>
 
           {/* Register Link */}
           <TouchableOpacity onPress={() => router.replace("/registerpatient")}>
@@ -196,7 +234,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#000" },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#000",
+  },
   modalText: { fontSize: 14, color: "#555", marginBottom: 20 },
   modalInput: {
     borderWidth: 1,
@@ -221,3 +264,4 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: { color: "#333", fontSize: 16 },
 });
+

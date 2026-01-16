@@ -4,14 +4,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
+
+import { BACKEND_URL } from "../constants/backend";
 
 export default function RegisterPatient() {
   const [gender, setGender] = useState("m");
@@ -29,25 +32,68 @@ export default function RegisterPatient() {
       setShowError(true);
       return;
     }
-
     setShowError(false);
 
-    const userData = {
-      name: firstName + " " + lastName,
-      phone,
-      birthdate,
-      gender,
-      email,
-    };
-
     try {
-      await AsyncStorage.setItem("user", JSON.stringify(userData));
-      console.log("Benutzer gespeichert:", userData);
-    } catch (e) {
-      console.error("Fehler beim Speichern", e);
-    }
+      // 1) Register on backend (creates user)
+      const registerRes = await fetch(`${BACKEND_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          role: "PATIENT",
+          name: `${firstName} ${lastName}`.trim(),
+        }),
+      });
 
-    router.push("/menu");
+      const registerData = await registerRes.json();
+
+      // إذا فشل التسجيل (مثلاً المستخدم موجود) → نكمل Login كحل عملي
+      if (!registerRes.ok) {
+        const msg =
+          registerData?.error ||
+          registerData?.message ||
+          "Registrierung fehlgeschlagen";
+        console.log("Register not ok:", msg);
+      }
+
+      // 2) Login on backend (gets token)
+      const loginRes = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const loginData = await loginRes.json();
+
+      if (!loginRes.ok) {
+        Alert.alert(
+          "Login fehlgeschlagen",
+          loginData?.error || loginData?.message || "Unbekannter Fehler"
+        );
+        return;
+      }
+
+      // 3) Store token + user info
+      await AsyncStorage.setItem("token", loginData.token);
+      await AsyncStorage.setItem("user", JSON.stringify(loginData.user));
+
+      // Optional: Store additional profile fields locally (for UI display)
+      const localUserData = {
+        name: `${firstName} ${lastName}`.trim(),
+        phone,
+        birthdate,
+        gender,
+        email,
+      };
+      await AsyncStorage.setItem("userProfile", JSON.stringify(localUserData));
+
+      router.replace("/menu");
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Fehler", "Server nicht erreichbar. Bitte Backend prüfen.");
+    }
   };
 
   return (
@@ -57,8 +103,6 @@ export default function RegisterPatient() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.container}>
-
-        
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.push("/login-patient")}
@@ -69,7 +113,6 @@ export default function RegisterPatient() {
         <Text style={styles.title}>registrieren</Text>
 
         <View style={styles.form}>
-
           <TextInput
             style={styles.input}
             placeholder="Vorname"
@@ -147,6 +190,7 @@ export default function RegisterPatient() {
               keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
+              autoCapitalize="none"
             />
             <Ionicons name="mail-outline" size={20} color="#8E8E8E" />
           </View>

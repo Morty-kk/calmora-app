@@ -1,6 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   ImageBackground,
   Modal,
   Pressable,
@@ -11,10 +13,55 @@ import {
   View,
 } from "react-native";
 
+import { BACKEND_URL } from "../constants/backend";
+
 export default function TherapeutLogin() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("therapist@example.com"); // للعرض
+  const [password, setPassword] = useState("Password123!"); // للعرض
+  const [loading, setLoading] = useState(false);
+
+  const onLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Bitte ausfüllen", "E-Mail und Passwort eingeben.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert(
+          "Login fehlgeschlagen",
+          data?.error || data?.message || "Unbekannter Fehler"
+        );
+        return;
+      }
+
+      // Optional: Sicherheit — تأكد إنه Therapist
+      if (data?.user?.role !== "THERAPIST") {
+        Alert.alert("Fehler", "Dieses Konto ist kein Therapeut.");
+        return;
+      }
+
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+      router.replace("/therapist-home");
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Fehler", "Server nicht erreichbar. Bitte Backend prüfen.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ImageBackground
@@ -35,9 +82,7 @@ export default function TherapeutLogin() {
 
           {/* Therapeut ACTIVE */}
           <TouchableOpacity onPress={() => router.push("/login-therapeut")}>
-            <Text style={[styles.tabText, styles.activeTab]}>
-              Therapeut
-            </Text>
+            <Text style={[styles.tabText, styles.activeTab]}>Therapeut</Text>
           </TouchableOpacity>
         </View>
 
@@ -45,6 +90,8 @@ export default function TherapeutLogin() {
         <TextInput
           style={styles.input}
           placeholder="Email Adresse"
+          autoCapitalize="none"
+          keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
@@ -63,15 +110,16 @@ export default function TherapeutLogin() {
           <Text style={styles.forgot}>Passwort vergessen?</Text>
         </TouchableOpacity>
 
-        {/* ✅ LOGIN BUTTON – DAS WAR DER FEHLER */}
+        {/* LOGIN BUTTON */}
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.replace("/therapist-home")}
+          style={[styles.button, loading && { opacity: 0.6 }]}
+          onPress={onLogin}
+          disabled={loading}
         >
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>{loading ? "..." : "Login"}</Text>
         </TouchableOpacity>
 
-        {/* ✅ REGISTRIEREN – UNVERÄNDERT */}
+        {/* REGISTRIEREN */}
         <TouchableOpacity onPress={() => router.replace("/registertherapeut")}>
           <Text style={styles.registerText}>
             Haben Sie kein Konto? dann registrieren
@@ -85,25 +133,31 @@ export default function TherapeutLogin() {
             onPress={() => setModalVisible(false)}
           >
             <Pressable style={styles.modalBox} onPress={() => {}}>
-              <Text style={styles.modalTitle}>
-                Passwort zurücksetzen
-              </Text>
+              <Text style={styles.modalTitle}>Passwort zurücksetzen</Text>
 
               <Text style={styles.modalText}>
-                Bitte geben Sie Ihre Email-Adresse ein. Wir senden Ihnen
-                einen 4-stelligen Code zur Verifizierung.
+                Bitte geben Sie Ihre Email-Adresse ein. Wir senden Ihnen einen
+                4-stelligen Code zur Verifizierung.
               </Text>
 
               <TextInput
                 style={styles.modalInput}
                 placeholder="Email"
+                autoCapitalize="none"
+                keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
               />
 
               <TouchableOpacity
                 style={styles.modalButton}
-                onPress={() => setModalVisible(false)}
+                onPress={() => {
+                  setModalVisible(false);
+                  Alert.alert(
+                    "E-Mail gesendet",
+                    "Bitte prüfen Sie Ihren Posteingang."
+                  );
+                }}
               >
                 <Text style={styles.modalBtnText}>Weiter</Text>
               </TouchableOpacity>

@@ -12,6 +12,7 @@ model User {
   email                 String         @unique
   passwordHash          String
   role                  UserRole
+  name                  String         @default("")
   createdAt             DateTime       @default(now())
   sentMessages          Message[]      @relation("UserMessages")
   patientConversations  Conversation[] @relation("PatientConversations")

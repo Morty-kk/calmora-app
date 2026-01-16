@@ -12,23 +12,35 @@ function isParticipant(conversation, userId) {
 
 async function createOrOpenConversation(req, res) {
   const currentUser = req.user;
-  const { patientId, therapistId } = req.body;
+
+  const { patientId, therapistId, patientEmail, therapistEmail } = req.body;
 
   let resolvedPatientId = patientId;
   let resolvedTherapistId = therapistId;
 
+  async function resolveUserIdByEmail(email, role) {
+    if (!email) return null;
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (!u || u.role !== role) return null;
+    return u.id;
+  }
+
+  const patientIdFromEmail = await resolveUserIdByEmail(patientEmail, "PATIENT");
+  const therapistIdFromEmail = await resolveUserIdByEmail(therapistEmail, "THERAPIST");
+
+  if (!resolvedPatientId && patientIdFromEmail) resolvedPatientId = patientIdFromEmail;
+  if (!resolvedTherapistId && therapistIdFromEmail) resolvedTherapistId = therapistIdFromEmail;
+
   if (currentUser.role === "PATIENT") {
     resolvedPatientId = currentUser.id;
-    if (!therapistId) {
-      return res.status(400).json({ error: "therapistId is required" });
+    if (!resolvedTherapistId) {
+      return res.status(400).json({ error: "therapistId or therapistEmail is required" });
     }
-    resolvedTherapistId = therapistId;
   } else if (currentUser.role === "THERAPIST") {
     resolvedTherapistId = currentUser.id;
-    if (!patientId) {
-      return res.status(400).json({ error: "patientId is required" });
+    if (!resolvedPatientId) {
+      return res.status(400).json({ error: "patientId or patientEmail is required" });
     }
-    resolvedPatientId = patientId;
   } else {
     return res.status(403).json({ error: "Invalid user role" });
   }
@@ -46,33 +58,24 @@ async function createOrOpenConversation(req, res) {
   ]);
 
   if (!patient || patient.role !== "PATIENT") {
-    return res.status(400).json({ error: "Invalid patientId" });
+    return res.status(400).json({ error: "Invalid patient" });
   }
   if (!therapist || therapist.role !== "THERAPIST") {
-    return res.status(400).json({ error: "Invalid therapistId" });
+    return res.status(400).json({ error: "Invalid therapist" });
   }
 
   const conversation = await prisma.conversation.upsert({
-    where: { patientId_therapistId: { patientId: patientIdNumber, therapistId: therapistIdNumber } },
+    where: {
+      patientId_therapistId: { patientId: patientIdNumber, therapistId: therapistIdNumber },
+    },
     update: {},
-    create: {
-      patientId: patientIdNumber,
-      therapistId: therapistIdNumber,
-    },
-    include: {
-      patient: true,
-      therapist: true,
-    },
+    create: { patientId: patientIdNumber, therapistId: therapistIdNumber },
+    include: { patient: true, therapist: true },
   });
 
-  return res.json({
-    conversation: {
-      ...conversation,
-      patient: serializeUser(conversation.patient),
-      therapist: serializeUser(conversation.therapist),
-    },
-  });
+  return res.json({ conversation });
 }
+
 
 async function listConversations(req, res) {
   const currentUser = req.user;

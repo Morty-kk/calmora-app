@@ -10,24 +10,28 @@ async function main() {
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
 
   await prisma.user.upsert({
-    where: { email: patientEmail },
-    update: {},
-    create: {
-      email: patientEmail,
-      passwordHash,
-      role: "PATIENT",
-    },
-  });
+  where: { email: patientEmail },
+  update: { name: "Patient Demo" },
+  create: {
+    email: patientEmail,
+    passwordHash,
+    role: "PATIENT",
+    name: "Patient Demo",
+  },
+});
+
 
   await prisma.user.upsert({
-    where: { email: therapistEmail },
-    update: {},
-    create: {
-      email: therapistEmail,
-      passwordHash,
-      role: "THERAPIST",
-    },
-  });
+  where: { email: therapistEmail },
+  update: { name: "Therapist Demo" },
+  create: {
+    email: therapistEmail,
+    passwordHash,
+    role: "THERAPIST",
+    name: "Therapist Demo",
+  },
+});
+
 
   // eslint-disable-next-line no-console
   console.log("Seeded patient and therapist users");

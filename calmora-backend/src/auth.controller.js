@@ -12,11 +12,15 @@ function signToken(userId) {
 
 async function register(req, res) {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, name } = req.body;
 
-    if (!email || !password || !role) {
-      return res.status(400).json({ error: "Missing fields: email, password, role" });
-    }
+
+    if (!email || !password || !role || !name) {
+  return res
+    .status(400)
+    .json({ error: "Missing fields: email, password, role, name" });
+}
+
 
     const normalizedRole = String(role).toUpperCase();
     if (!["PATIENT", "THERAPIST"].includes(normalizedRole)) {
@@ -28,13 +32,15 @@ async function register(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        role: normalizedRole,
-      },
-    });
+   const user = await prisma.user.create({
+  data: {
+    email,
+    passwordHash,
+    role: normalizedRole,
+    name, // ✅ هون أهم سطر
+  },
+});
+
 
     return res.status(201).json({ message: "User registered", userId: user.id });
   } catch (err) {
@@ -67,6 +73,7 @@ async function login(req, res) {
         id: user.id,
         email: user.email,
         role: user.role,
+        name: user.name,
       },
     });
   } catch (err) {

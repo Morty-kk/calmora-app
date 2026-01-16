@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { login as apiLogin, register as apiRegister } from '../services/api';
@@ -45,10 +45,12 @@ export function AuthProvider({ children }) {
       const data = await apiLogin({ email, password });
 
       const profile = {
-        id: data.user.id,
-        email: data.user.email,
-        role: data.user.role === 'THERAPIST' ? 'Therapist' : 'Patient',
-      };
+  id: data.user.id,
+  email: data.user.email,
+  role: data.user.role, // ✅ خليها "THERAPIST" أو "PATIENT"
+  name: data.user.name, // ✅ إذا عندك name بالباك اند
+};
+
 
       setUser(profile);
       setToken(data.token);

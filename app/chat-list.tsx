@@ -1,11 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, Image, StyleSheet, FlatList, ActivityIndicator } from "react-native";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+
+
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { useAuth } from "../context/AuthContext";
-import { Conversation, getConversations } from "../services/api";
+import {
+  Conversation,
+  createConversation,
+  getConversations,
+} from "../services/api";
 
 function formatTimestamp(value?: string | null) {
   if (!value) return "";
@@ -15,6 +29,7 @@ function formatTimestamp(value?: string | null) {
 
 export default function ChatList() {
   const { token, user } = useAuth();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,10 +67,54 @@ export default function ChatList() {
     return () => clearInterval(interval);
   }, [loadConversations, token]);
 
+  const startDemoChat = async () => {
+    if (!token) {
+      setError("Bitte anmelden.");
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      const data = await createConversation(token, {
+        patientEmail: "patient@example.com",
+        therapistEmail: "therapist@example.com",
+      });
+
+      // Reload list
+      await loadConversations();
+
+      // ✅ FIX: robust role check
+      const isTherapist = (user?.role ?? "").toUpperCase() === "THERAPIST";
+      const partner = isTherapist
+        ? data.conversation.patient
+        : data.conversation.therapist;
+
+      // Direkt in Chat springen
+      router.push({
+        pathname: "/chat",
+        params: {
+          conversationId: data.conversation.id.toString(),
+          partnerEmail: partner.email,
+        },
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Conversation konnte nicht erstellt werden.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderItem = ({ item }: { item: Conversation }) => {
-    const partner = user?.role === "Therapist" ? item.patient : item.therapist;
+    // ✅ FIX: robust role check
+    const partner = item.therapist;
+
+
     const lastMessageText = item.lastMessage?.content || "Keine Nachrichten";
-    const timeLabel = item.lastMessage?.createdAt ? formatTimestamp(item.lastMessage.createdAt) : "";
+    const timeLabel = item.lastMessage?.createdAt
+      ? formatTimestamp(item.lastMessage.createdAt)
+      : "";
 
     return (
       <Pressable
@@ -63,11 +122,17 @@ export default function ChatList() {
         onPress={() =>
           router.push({
             pathname: "/chat",
-            params: { conversationId: item.id.toString(), partnerEmail: partner.email },
+            params: {
+              conversationId: item.id.toString(),
+              partnerEmail: partner.email,
+            },
           })
         }
       >
-        <Image source={require("../assets/profile-placeholder.jpg")} style={styles.avatar} />
+        <Image
+          source={require("../assets/profile-placeholder.jpg")}
+          style={styles.avatar}
+        />
 
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{partner.email}</Text>
@@ -104,7 +169,13 @@ export default function ChatList() {
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : conversations.length === 0 ? (
-        <Text style={styles.emptyText}>Keine Unterhaltungen gefunden.</Text>
+        <View>
+          <Text style={styles.emptyText}>Keine Unterhaltungen gefunden.</Text>
+
+          <Pressable style={styles.startButton} onPress={startDemoChat}>
+            <Text style={styles.startButtonText}>Start Chat (Demo)</Text>
+          </Pressable>
+        </View>
       ) : (
         <FlatList
           data={conversations}
@@ -184,4 +255,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: "#B00020",
   },
+
+  // ✅ زر إنشاء محادثة Demo
+  startButton: {
+    marginTop: 14,
+    backgroundColor: "#7C6FB3",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontWeight: "700",
+  },
 });
+
+

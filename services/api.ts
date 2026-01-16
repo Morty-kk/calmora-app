@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://192.168.178.107:4000";
+import { BACKEND_URL } from "../constants/backend";
+
+const API_BASE_URL = BACKEND_URL;
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -36,7 +38,14 @@ export async function apiFetch<T = any>(
   return data as T;
 }
 
-export function register(input: { email: string; password: string; role: "PATIENT" | "THERAPIST" }) {
+/** ===================== AUTH ===================== **/
+
+export function register(input: {
+  email: string;
+  password: string;
+  role: "PATIENT" | "THERAPIST";
+  name: string; // ✅ جديد
+}) {
   return apiFetch<{ message: string; userId: number }>("/auth/register", {
     method: "POST",
     body: input,
@@ -44,13 +53,23 @@ export function register(input: { email: string; password: string; role: "PATIEN
 }
 
 export function login(input: { email: string; password: string }) {
-  return apiFetch<{ token: string; user: { id: number; email: string; role: "PATIENT" | "THERAPIST" } }>("/auth/login", {
+  return apiFetch<{
+    token: string;
+    user: { id: number; email: string; role: "PATIENT" | "THERAPIST"; name: string }; // ✅ name
+  }>("/auth/login", {
     method: "POST",
     body: input,
   });
 }
 
-export type ChatUser = { id: number; email: string; role: "PATIENT" | "THERAPIST" };
+/** ===================== CHAT TYPES ===================== **/
+
+export type ChatUser = {
+  id: number;
+  email: string;
+  role: "PATIENT" | "THERAPIST";
+  name?: string; // ✅ موجود بالـ DB الآن
+};
 
 export type ChatMessage = {
   id: number;
@@ -75,9 +94,23 @@ export type Conversation = {
   lastMessage: ChatMessage | null;
 };
 
+/** ===================== CHAT API ===================== **/
+
 export function getConversations(token: string) {
   return apiFetch<{ conversations: Conversation[] }>("/chat/conversations", {
     token,
+  });
+}
+
+// ✅ جديد: إنشاء محادثة بين Patient و Therapist
+export function createConversation(
+  token: string,
+  payload: { patientEmail: string; therapistEmail: string }
+) {
+  return apiFetch<{ conversation: Conversation }>("/chat/conversations", {
+    method: "POST",
+    token,
+    body: payload,
   });
 }
 
@@ -87,27 +120,29 @@ export function getConversationMessages(
   params: { cursor?: number; limit?: number } = {}
 ) {
   const searchParams = new URLSearchParams();
-  if (params.cursor) {
-    searchParams.set("cursor", String(params.cursor));
-  }
-  if (params.limit) {
-    searchParams.set("limit", String(params.limit));
-  }
+  if (params.cursor) searchParams.set("cursor", String(params.cursor));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+
   const query = searchParams.toString();
   return apiFetch<{ messages: ChatMessage[]; nextCursor: number | null }>(
     `/chat/conversations/${conversationId}/messages${query ? `?${query}` : ""}`,
-    {
-      token,
-    }
+    { token }
   );
 }
 
-export function sendMessage(token: string, conversationId: number, payload: { content: string }) {
-  return apiFetch<{ message: ChatMessage }>(`/chat/conversations/${conversationId}/messages`, {
-    method: "POST",
-    token,
-    body: payload,
-  });
+export function sendMessage(
+  token: string,
+  conversationId: number,
+  payload: { content: string }
+) {
+  return apiFetch<{ message: ChatMessage }>(
+    `/chat/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      token,
+      body: payload,
+    }
+  );
 }
 
 export function markMessageRead(token: string, messageId: number) {
@@ -116,3 +151,4 @@ export function markMessageRead(token: string, messageId: number) {
     token,
   });
 }
+
