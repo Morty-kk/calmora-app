@@ -1,17 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useNotify } from "../../context/NotifyContext";
 import { api, Appointment } from "./appointmentsApi";
 import { getPatientById } from "./patientsApi";
-
 
 export default function TherapistHome() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const therapistName = "Herr Bellamy";
 
+  const { unreadChats, setUnreadChats } = useNotify();
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingNext, setLoadingNext] = useState(true);
@@ -28,31 +29,24 @@ export default function TherapistHome() {
     })();
   }, []);
 
+  const nextAppointment = useMemo(() => {
+    const now = new Date();
 
- const nextAppointment = useMemo(() => {
-  const now = new Date();
+    const sorted = [...appointments].sort((a, b) => {
+      const da = `${a.date}T${a.time}:00`;
+      const db = `${b.date}T${b.time}:00`;
+      return da.localeCompare(db);
+    });
 
-  const sorted = [...appointments].sort((a, b) => {
-    const da = `${a.date}T${a.time}:00`;
-    const db = `${b.date}T${b.time}:00`;
-    return da.localeCompare(db);
-  });
+    return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
+  }, [appointments]);
 
-  return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
-}, [appointments]);
+  const nextPatientName = useMemo(() => {
+    if (!nextAppointment) return "";
 
-const nextPatientName = useMemo(() => {
-  if (!nextAppointment) return "";
-
-  const patient = getPatientById(nextAppointment.patientId);
-  return patient ? patient.name : nextAppointment.patientId;
-}, [nextAppointment]);
-
-
-  const patientPreview = {
-    name: "Alex wirtz",
-    info: "22 Jahre · ABA-Therapie",
-  };
+    const patient = getPatientById(nextAppointment.patientId);
+    return patient ? patient.name : nextAppointment.patientId;
+  }, [nextAppointment]);
 
   const go = (path: string) => {
     setMenuOpen(false);
@@ -64,8 +58,13 @@ const nextPatientName = useMemo(() => {
       router.replace("/therapist-appointments");
       return;
     }
-  
     router.push(`/therapist-appointments?date=${nextAppointment.date}` as any);
+  };
+
+  const openChatList = () => {
+    // ✅ لما يفتح قائمة الشات عند الطبيب → صفر الـ badge
+    setUnreadChats(0);
+    router.push("/therapist-chatlist");
   };
 
   return (
@@ -116,37 +115,32 @@ const nextPatientName = useMemo(() => {
       </Pressable>
 
       {/* Schnellzugriff */}
-<View style={styles.cardQuick}>
-  <Text style={styles.cardTitle}>Schnellzugriff</Text>
+      <View style={styles.cardQuick}>
+        <Text style={styles.cardTitle}>Schnellzugriff</Text>
 
-  <View style={styles.quickRow}>
-    <Pressable
-      style={styles.quickBtn}
-      onPress={() => router.push("/therapist-appointments")}
-    >
-      <Ionicons name="calendar-outline" size={22} color="#111" />
-      <Text style={styles.quickText}>Termin erstellen</Text>
-    </Pressable>
+        <View style={styles.quickRow}>
+          <Pressable
+            style={styles.quickBtn}
+            onPress={() => router.push("/therapist-appointments")}
+          >
+            <Ionicons name="calendar-outline" size={22} color="#111" />
+            <Text style={styles.quickText}>Termin erstellen</Text>
+          </Pressable>
 
-    <Pressable
-  style={styles.quickBtn}
-  onPress={() => router.push("/sitzungverlauf")}
->
-  <Ionicons name="document-text-outline" size={22} color="#111" />
-  <Text style={styles.quickText}>Sitzungsverlauf</Text>
-</Pressable>
+          <Pressable style={styles.quickBtn} onPress={() => router.push("/sitzungverlauf")}>
+            <Ionicons name="document-text-outline" size={22} color="#111" />
+            <Text style={styles.quickText}>Sitzungsverlauf</Text>
+          </Pressable>
 
-
-    <Pressable
-      style={styles.quickBtn}
-      onPress={() => router.push("/therapist-patients")}
-    >
-      <Ionicons name="people-outline" size={22} color="#111" />
-      <Text style={styles.quickText}>Patientenliste</Text>
-    </Pressable>
-  </View>
-</View>
-
+          <Pressable
+            style={styles.quickBtn}
+            onPress={() => router.push("/therapist-patients")}
+          >
+            <Ionicons name="people-outline" size={22} color="#111" />
+            <Text style={styles.quickText}>Patientenliste</Text>
+          </Pressable>
+        </View>
+      </View>
 
       {/* Bottom Tabs */}
       <View style={styles.tabs}>
@@ -155,8 +149,17 @@ const nextPatientName = useMemo(() => {
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
-          <Ionicons name="chatbubbles-outline" size={22} color="#111" />
+        <Pressable style={styles.tab} onPress={openChatList}>
+          <View style={styles.iconWrap}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#111" />
+            {unreadChats > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadChats > 99 ? "99+" : String(unreadChats)}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
@@ -190,8 +193,24 @@ const nextPatientName = useMemo(() => {
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
-              <Text style={styles.menuText}>Chat</Text>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                setUnreadChats(0);
+                router.push("/therapist-chatlist");
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text style={styles.menuText}>Chat</Text>
+                {unreadChats > 0 && (
+                  <View style={styles.menuBadge}>
+                    <Text style={styles.menuBadgeText}>
+                      {unreadChats > 99 ? "99+" : String(unreadChats)}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
@@ -258,7 +277,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-
   cardDivider: {
     height: 1,
     backgroundColor: "#BDBDBD",
@@ -282,56 +300,55 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-
-cardQuick: {
-  backgroundColor: "#D9D9D9",
-  borderRadius: 16,
-  padding: 14,
-  marginTop: 6,
-},
-
-quickRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginTop: 12,
-},
-
-quickBtn: {
-  flex: 1,
-  backgroundColor: "#ECECEC",
-  borderRadius: 14,
-  paddingVertical: 14,
-  alignItems: "center",
-  marginHorizontal: 4,
-  gap: 6,
-},
-
-quickText: {
-  fontSize: 12,
-  fontWeight: "700",
-  color: "#111",
-  textAlign: "center",
-},
-
-cardTitle: { 
-  fontSize: 17,
-   fontWeight: "700",
-   color: "#111", 
+  cardQuick: {
+    backgroundColor: "#D9D9D9",
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 6,
   },
 
-tabs: {
-  flexDirection: "row",
-  justifyContent: "space-around",
-  backgroundColor: "#E0E0E0",
-  paddingVertical: 10,
-  paddingHorizontal: 10,
+  quickRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
 
-  position: "absolute",
-  bottom: 12,
-  left: 12,
-  right: 12,
-  borderRadius: 16,
-},
+  quickBtn: {
+    flex: 1,
+    backgroundColor: "#ECECEC",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginHorizontal: 4,
+    gap: 6,
+  },
+
+  quickText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111",
+    textAlign: "center",
+  },
+
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111",
+  },
+
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#E0E0E0",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    right: 12,
+    borderRadius: 16,
+  },
 
   tab: {
     alignItems: "center",
@@ -350,6 +367,32 @@ tabs: {
     fontSize: 12,
     fontWeight: "800",
     color: "#111",
+  },
+
+  // ✅ badge فوق أيقونة الشات
+  iconWrap: {
+    position: "relative",
+    width: 28,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badge: {
+    position: "absolute",
+    right: -8,
+    top: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
   },
 
   overlay: {
@@ -391,6 +434,22 @@ tabs: {
     fontWeight: "600",
   },
 
+  // ✅ badge داخل المينو
+  menuBadge: {
+    minWidth: 22,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  menuBadgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
   logoutBtn: {
     paddingVertical: 10,
   },
@@ -401,3 +460,4 @@ tabs: {
     fontWeight: "700",
   },
 });
+

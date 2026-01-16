@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -29,6 +28,17 @@ function formatTimestamp(value?: string | null) {
 
 export default function ChatList() {
   const { token, user } = useAuth();
+
+  // ✅ Fix TypeScript: user كـ any واستخراج role بشكل robust
+  const u: any = user;
+  const role = useMemo(
+    () =>
+      String(
+        u?.role ?? u?.userRole ?? u?.user?.role ?? u?.profile?.role ?? ""
+      ).toUpperCase(),
+    [u]
+  );
+  const isTherapist = role === "THERAPIST";
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,31 +95,29 @@ export default function ChatList() {
       // Reload list
       await loadConversations();
 
-      // ✅ FIX: robust role check
-      const isTherapist = (user?.role ?? "").toUpperCase() === "THERAPIST";
       const partner = isTherapist
         ? data.conversation.patient
         : data.conversation.therapist;
 
       // Direkt in Chat springen
       router.push({
-        pathname: "/chat",
+        pathname: isTherapist ? "/therapist-chat" : "/chat",
         params: {
           conversationId: data.conversation.id.toString(),
           partnerEmail: partner.email,
         },
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Conversation konnte nicht erstellt werden.");
+      setError(
+        e instanceof Error ? e.message : "Conversation konnte nicht erstellt werden."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const renderItem = ({ item }: { item: Conversation }) => {
-    // ✅ FIX: robust role check
-    const partner = item.therapist;
-
+    const partner = isTherapist ? item.patient : item.therapist;
 
     const lastMessageText = item.lastMessage?.content || "Keine Nachrichten";
     const timeLabel = item.lastMessage?.createdAt
@@ -121,7 +129,7 @@ export default function ChatList() {
         style={styles.row}
         onPress={() =>
           router.push({
-            pathname: "/chat",
+            pathname: isTherapist ? "/therapist-chat" : "/chat",
             params: {
               conversationId: item.id.toString(),
               partnerEmail: partner.email,
@@ -269,5 +277,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-

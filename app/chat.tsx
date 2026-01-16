@@ -1,37 +1,70 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TextInput,
-  ImageBackground,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { useAuth } from "../context/AuthContext";
-import { ChatMessage, getConversationMessages, markMessageRead, sendMessage } from "../services/api";
+import { useNotify } from "../context/NotifyContext";
+import {
+  ChatMessage,
+  getConversationMessages,
+  markMessageRead,
+  sendMessage,
+} from "../services/api";
 
 const PAGE_SIZE = 30;
 
 function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function ChatScreen() {
   const { token, user } = useAuth();
+  const { setUnreadChats } = useNotify();
+
+  // ✅ حل TypeScript: نخلي user any ونطلع id بأي اسم موجود
+  const u: any = user;
+  const myId =
+    u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
+
+  // ✅ reset badge أول ما تفتح صفحة الشات
+  useEffect(() => {
+    setUnreadChats(0);
+  }, [setUnreadChats]);
+
   const { conversationId, partnerEmail } = useLocalSearchParams();
-  const normalizedConversationId = Array.isArray(conversationId) ? conversationId[0] : conversationId;
-  const normalizedPartnerEmail = Array.isArray(partnerEmail) ? partnerEmail[0] : partnerEmail;
-  const conversationIdNumber = useMemo(() => Number(normalizedConversationId), [normalizedConversationId]);
-  const invalidConversation = Number.isNaN(conversationIdNumber) || conversationIdNumber <= 0;
+
+  const normalizedConversationId = Array.isArray(conversationId)
+    ? conversationId[0]
+    : conversationId;
+
+  const normalizedPartnerEmail = Array.isArray(partnerEmail)
+    ? partnerEmail[0]
+    : partnerEmail;
+
+  const conversationIdNumber = useMemo(
+    () => Number(normalizedConversationId),
+    [normalizedConversationId]
+  );
+
+  const invalidConversation =
+    Number.isNaN(conversationIdNumber) || conversationIdNumber <= 0;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,36 +76,38 @@ export default function ChatScreen() {
   const loadMessages = useCallback(
     async (options: { cursor?: number; append?: boolean } = {}) => {
       if (!token || invalidConversation) return;
-      if (!options.append) {
-        setLoading(true);
-      }
+
+      if (!options.append) setLoading(true);
       setError(null);
+
       try {
         const data = await getConversationMessages(token, conversationIdNumber, {
           limit: PAGE_SIZE,
           cursor: options.cursor,
         });
+
         setNextCursor(data.nextCursor);
+
         setMessages((prev) => {
-          if (options.append) {
-            return [...prev, ...data.messages];
-          }
-          if (prev.length === 0) {
-            return data.messages;
-          }
+          if (options.append) return [...prev, ...data.messages];
+
+          if (prev.length === 0) return data.messages;
+
           const latestIds = new Set(data.messages.map((message) => message.id));
           const preserved = prev.filter((message) => !latestIds.has(message.id));
           return [...data.messages, ...preserved];
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Nachrichten konnten nicht geladen werden.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Nachrichten konnten nicht geladen werden."
+        );
       } finally {
-        if (!options.append) {
-          setLoading(false);
-        }
+        if (!options.append) setLoading(false);
       }
     },
-    [conversationIdNumber, token]
+    [conversationIdNumber, token, invalidConversation]
   );
 
   useEffect(() => {
@@ -87,23 +122,30 @@ export default function ChatScreen() {
       return;
     }
     loadMessages();
-  }, [invalidConversation, loadMessages]);
+  }, [invalidConversation, loadMessages, token]);
 
   useEffect(() => {
     if (!token || invalidConversation) return;
+
     const interval = setInterval(() => {
       loadMessages();
     }, 4000);
-    return () => clearInterval(interval);
-  }, [conversationIdNumber, loadMessages, token]);
 
+    return () => clearInterval(interval);
+  }, [loadMessages, token, invalidConversation]);
+
+  // ✅ mark as read بدون user?.id
   useEffect(() => {
-    if (!token || !user?.id) return;
-    const unread = messages.filter((message) => !message.readAt && message.senderId !== user.id);
+    if (!token || !myId) return;
+
+    const unread = messages.filter(
+      (message) => !message.readAt && message.senderId !== Number(myId)
+    );
+
     unread.forEach((message) => {
       markMessageRead(token, message.id).catch(() => null);
     });
-  }, [messages, token, user?.id]);
+  }, [messages, token, myId]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -111,10 +153,11 @@ export default function ChatScreen() {
     if (!token || invalidConversation || sending) return;
 
     const tempId = Date.now() * -1;
+
     const optimisticMessage: ChatMessage = {
       id: tempId,
       conversationId: conversationIdNumber,
-      senderId: user?.id ?? 0,
+      senderId: Number(myId) || 0,
       content: text,
       createdAt: new Date().toISOString(),
       readAt: null,
@@ -125,13 +168,20 @@ export default function ChatScreen() {
     setSending(true);
 
     try {
-      const data = await sendMessage(token, conversationIdNumber, { content: text });
+      const data = await sendMessage(token, conversationIdNumber, {
+        content: text,
+      });
+
       setMessages((prev) =>
         prev.map((message) => (message.id === tempId ? data.message : message))
       );
     } catch (err) {
       setMessages((prev) => prev.filter((message) => message.id !== tempId));
-      setError(err instanceof Error ? err.message : "Nachricht konnte nicht gesendet werden.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Nachricht konnte nicht gesendet werden."
+      );
     } finally {
       setSending(false);
     }
@@ -183,7 +233,7 @@ export default function ChatScreen() {
               data={messages}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => {
-                const isUser = item.senderId === user?.id;
+                const isUser = Number(item.senderId) === Number(myId);
                 return (
                   <View
                     style={[
@@ -191,7 +241,9 @@ export default function ChatScreen() {
                       isUser ? styles.rightBubble : styles.leftBubble,
                     ]}
                   >
-                    <Text style={isUser ? styles.rightText : styles.leftText}>{item.content}</Text>
+                    <Text style={isUser ? styles.rightText : styles.leftText}>
+                      {item.content}
+                    </Text>
                     <Text style={isUser ? styles.timeRight : styles.timeLeft}>
                       {`${formatTime(item.createdAt)}${isUser ? " ✓" : ""}`}
                     </Text>
@@ -322,3 +374,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
