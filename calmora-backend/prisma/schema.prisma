@@ -17,6 +17,9 @@ model User {
   sentMessages          Message[]      @relation("UserMessages")
   patientConversations  Conversation[] @relation("PatientConversations")
   therapistConversations Conversation[] @relation("TherapistConversations")
+    patientAppointments   Appointment[] @relation("PatientAppointments")
+  therapistAppointments Appointment[] @relation("TherapistAppointments")
+
 }
 
 enum UserRole {
@@ -57,3 +60,20 @@ model Message {
   @@index([senderId])
   @@index([createdAt])
 }
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  therapistId Int
+  startsAt    DateTime
+  note        String?
+  status      String   @default("BOOKED")
+  createdAt   DateTime @default(now())
+
+  patient     User     @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  therapist   User     @relation("TherapistAppointments", fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([therapistId])
+  @@unique([therapistId, startsAt])
+}
+

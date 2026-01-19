@@ -245,8 +245,10 @@ export default function ChatScreen() {
                       {item.content}
                     </Text>
                     <Text style={isUser ? styles.timeRight : styles.timeLeft}>
-                      {`${formatTime(item.createdAt)}${isUser ? " ✓" : ""}`}
-                    </Text>
+  {formatTime(item.createdAt)}
+  {isUser ? (item.readAt ? " ✓✓" : " ✓") : ""}
+</Text>
+
                   </View>
                 );
               }}

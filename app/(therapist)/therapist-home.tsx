@@ -1,51 +1,98 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BACKEND_URL } from "../../constants/backend"; // ✅ تأكد من المسار عندك
 import { useNotify } from "../../context/NotifyContext";
-import { api, Appointment } from "./appointmentsApi";
-import { getPatientById } from "./patientsApi";
+
+type BackendAppointment = {
+  id: number | string;
+  startsAt: string; // ISO date from backend
+  note?: string | null;
+  patient?: { id: number | string; name?: string | null; email?: string | null };
+};
 
 export default function TherapistHome() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const therapistName = "Herr Bellamy";
-
   const { unreadChats, setUnreadChats } = useNotify();
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<BackendAppointment[]>([]);
   const [loadingNext, setLoadingNext] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoadingNext(true);
-        const data = await api.fetchAppointments();
-        setAppointments(data);
-      } finally {
-        setLoadingNext(false);
-      }
-    })();
-  }, []);
+  // ✅ تحميل مواعيد الطبيب من الباك-إند كل مرة الصفحة تنفتح
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        try {
+          setLoadingNext(true);
 
+          const token = await AsyncStorage.getItem("token");
+          if (!token) {
+            setAppointments([]);
+            return;
+          }
+
+          const res = await fetch(`${BACKEND_URL}/appointments/therapist`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            console.log("appointments/therapist error:", data);
+            setAppointments([]);
+            return;
+          }
+
+          setAppointments(data.items ?? []);
+        } catch (e) {
+          console.log("TherapistHome load error:", e);
+          setAppointments([]);
+        } finally {
+          setLoadingNext(false);
+        }
+      };
+
+      load();
+    }, [])
+  );
+
+  // ✅ أقرب موعد قادم
   const nextAppointment = useMemo(() => {
     const now = new Date();
 
-    const sorted = [...appointments].sort((a, b) => {
-      const da = `${a.date}T${a.time}:00`;
-      const db = `${b.date}T${b.time}:00`;
-      return da.localeCompare(db);
-    });
+    const upcoming = [...appointments]
+      .map((a) => ({ ...a, d: new Date(a.startsAt) }))
+      .filter((a) => a.d.getTime() >= now.getTime())
+      .sort((a, b) => a.d.getTime() - b.d.getTime())[0];
 
-    return sorted.find((a) => new Date(`${a.date}T${a.time}:00`) >= now) || null;
+    return upcoming ?? null;
   }, [appointments]);
 
   const nextPatientName = useMemo(() => {
     if (!nextAppointment) return "";
+    return (
+      nextAppointment?.patient?.name ||
+      nextAppointment?.patient?.email ||
+      "Patient"
+    );
+  }, [nextAppointment]);
 
-    const patient = getPatientById(nextAppointment.patientId);
-    return patient ? patient.name : nextAppointment.patientId;
+  const nextDate = useMemo(() => {
+    if (!nextAppointment) return null;
+    // نفس شكل الصورة: 2026-02-05
+    return new Date(nextAppointment.startsAt).toISOString().slice(0, 10);
+  }, [nextAppointment]);
+
+  const nextTime = useMemo(() => {
+    if (!nextAppointment) return null;
+    return new Date(nextAppointment.startsAt).toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }, [nextAppointment]);
 
   const go = (path: string) => {
@@ -53,16 +100,16 @@ export default function TherapistHome() {
     router.replace(path as any);
   };
 
+  // ✅ لما يكبس على كرت الموعد → يروح لصفحة therapist-appointments مع التاريخ
   const openNextInAppointments = () => {
-    if (!nextAppointment) {
+    if (!nextDate) {
       router.replace("/therapist-appointments");
       return;
     }
-    router.push(`/therapist-appointments?date=${nextAppointment.date}` as any);
+    router.push(`/therapist-appointments?date=${nextDate}` as any);
   };
 
   const openChatList = () => {
-    // ✅ لما يفتح قائمة الشات عند الطبيب → صفر الـ badge
     setUnreadChats(0);
     router.push("/therapist-chatlist");
   };
@@ -99,12 +146,12 @@ export default function TherapistHome() {
           <View style={styles.cardRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Datum</Text>
-              <Text style={styles.value}>{nextAppointment.date}</Text>
+              <Text style={styles.value}>{nextDate}</Text>
             </View>
 
             <View style={{ flex: 1, alignItems: "flex-end" }}>
               <Text style={styles.label}>Uhrzeit</Text>
-              <Text style={styles.value}>{nextAppointment.time}</Text>
+              <Text style={styles.value}>{nextTime}</Text>
             </View>
           </View>
         ) : (
@@ -127,7 +174,10 @@ export default function TherapistHome() {
             <Text style={styles.quickText}>Termin erstellen</Text>
           </Pressable>
 
-          <Pressable style={styles.quickBtn} onPress={() => router.push("/sitzungverlauf")}>
+          <Pressable
+            style={styles.quickBtn}
+            onPress={() => router.push("/sitzungverlauf")}
+          >
             <Ionicons name="document-text-outline" size={22} color="#111" />
             <Text style={styles.quickText}>Sitzungsverlauf</Text>
           </Pressable>
@@ -144,7 +194,10 @@ export default function TherapistHome() {
 
       {/* Bottom Tabs */}
       <View style={styles.tabs}>
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
+        <Pressable
+          style={styles.tab}
+          onPress={() => router.replace("/therapist-home")}
+        >
           <Ionicons name="home" size={22} color="#111" />
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
@@ -163,12 +216,18 @@ export default function TherapistHome() {
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-patients")}>
+        <Pressable
+          style={styles.tab}
+          onPress={() => router.push("/therapist-patients")}
+        >
           <Ionicons name="people-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Patienten</Text>
         </Pressable>
 
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
+        <Pressable
+          style={styles.tab}
+          onPress={() => router.replace("/therapist-profile")}
+        >
           <Ionicons name="person-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Profil</Text>
         </Pressable>
@@ -181,15 +240,24 @@ export default function TherapistHome() {
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-home")}
+            >
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-patients")}
+            >
               <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-appointments")}
+            >
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
@@ -213,7 +281,10 @@ export default function TherapistHome() {
               </View>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => go("/therapist-profile")}
+            >
               <Text style={styles.menuText}>Mein Profil</Text>
             </Pressable>
 
@@ -283,15 +354,9 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 
-  cardRow: {
-    flexDirection: "row",
-  },
+  cardRow: { flexDirection: "row" },
 
-  label: {
-    fontSize: 14,
-    color: "#7A4A4A",
-    fontWeight: "600",
-  },
+  label: { fontSize: 14, color: "#7A4A4A", fontWeight: "600" },
 
   value: {
     fontSize: 16,
@@ -330,11 +395,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
-  },
+  cardTitle: { fontSize: 17, fontWeight: "700", color: "#111" },
 
   tabs: {
     flexDirection: "row",
@@ -342,7 +403,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     paddingVertical: 10,
     paddingHorizontal: 10,
-
     position: "absolute",
     bottom: 12,
     left: 12,
@@ -350,26 +410,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
 
-  tab: {
-    alignItems: "center",
-    width: 78,
-    gap: 4,
-  },
+  tab: { alignItems: "center", width: 78, gap: 4 },
 
-  tabText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111",
-    opacity: 0.85,
-  },
+  tabText: { fontSize: 12, fontWeight: "600", color: "#111", opacity: 0.85 },
+  tabTextActive: { fontSize: 12, fontWeight: "800", color: "#111" },
 
-  tabTextActive: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111",
-  },
-
-  // ✅ badge فوق أيقونة الشات
   iconWrap: {
     position: "relative",
     width: 28,
@@ -389,11 +434,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  badgeText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "800",
-  },
+  badgeText: { color: "white", fontSize: 10, fontWeight: "800" },
 
   overlay: {
     flex: 1,
@@ -410,12 +451,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
   },
 
-  menuTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#111",
-    marginBottom: 10,
-  },
+  menuTitle: { fontSize: 22, fontWeight: "800", color: "#111", marginBottom: 10 },
 
   menuDivider: {
     height: 1,
@@ -424,17 +460,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 
-  menuItem: {
-    paddingVertical: 8,
-  },
+  menuItem: { paddingVertical: 8 },
 
-  menuText: {
-    fontSize: 16,
-    color: "#111",
-    fontWeight: "600",
-  },
+  menuText: { fontSize: 16, color: "#111", fontWeight: "600" },
 
-  // ✅ badge داخل المينو
   menuBadge: {
     minWidth: 22,
     height: 18,
@@ -444,20 +473,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 6,
   },
-  menuBadgeText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "800",
-  },
+  menuBadgeText: { color: "white", fontSize: 10, fontWeight: "800" },
 
-  logoutBtn: {
-    paddingVertical: 10,
-  },
+  logoutBtn: { paddingVertical: 10 },
 
-  logoutText: {
-    color: "#B00000",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  logoutText: { color: "#B00000", fontSize: 16, fontWeight: "700" },
 });
-

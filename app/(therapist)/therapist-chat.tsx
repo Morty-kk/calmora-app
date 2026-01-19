@@ -2,27 +2,27 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    ImageBackground,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { useAuth } from "../../context/AuthContext";
 import { useNotify } from "../../context/NotifyContext";
 import {
-    ChatMessage,
-    getConversationMessages,
-    markMessageRead,
-    sendMessage,
+  ChatMessage,
+  getConversationMessages,
+  markMessageRead,
+  sendMessage,
 } from "../../services/api";
 
 const PAGE_SIZE = 30;

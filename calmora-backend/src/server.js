@@ -2,6 +2,8 @@ const express = require('express');
 const dotenv = require('dotenv');
 const authRoutes = require('./auth.routes');
 const chatRoutes = require('./chat.routes');
+const appointmentRoutes = require("./appointments.routes");
+
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.get('/health', (_req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
+app.use("/appointments", appointmentRoutes);
+
 
 app.use((err, _req, res, _next) => {
   // eslint-disable-next-line no-console

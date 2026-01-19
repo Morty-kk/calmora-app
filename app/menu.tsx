@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import BottomTabs from "../components/BottomTabs";
+import { BACKEND_URL } from "../constants/backend";
 import { useNotify } from "../context/NotifyContext";
 
 function Tile({
@@ -32,37 +33,94 @@ function Tile({
   );
 }
 
+type NextAppointment = {
+  date: string;
+  time: string;
+  name?: string;
+};
+
 export default function Menu() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userName, setUserName] = useState("...");
 
   const { unreadChats } = useNotify();
 
-  // 🔥 الموعد القادم
-  const [appointment, setAppointment] = useState<{
-    date: string;
-    time: string;
-    name?: string;
-  } | null>(null);
+  // ✅ الموعد القادم (من الباك-إند)
+  const [appointment, setAppointment] = useState<NextAppointment | null>(null);
 
-  // 📌 جلب اسم المستخدم + الموعد من AsyncStorage
+  // ✅ جلب اسم المستخدم + جلب أقرب موعد من Backend
   useEffect(() => {
     const loadData = async () => {
       try {
-        // جلب المستخدم
+        // ---- user name ----
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const user = JSON.parse(storedUser);
           setUserName(user.name || "Gast");
+        } else {
+          setUserName("Gast");
         }
 
-        // جلب الموعد
-        const storedAppointment = await AsyncStorage.getItem("nextAppointment");
-        if (storedAppointment) {
-          setAppointment(JSON.parse(storedAppointment));
+        // ---- token ----
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          setAppointment(null);
+          return;
         }
+
+        // ---- fetch appointments ----
+        const res = await fetch(`${BACKEND_URL}/appointments/mine`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          console.log("appointments/mine error:", data);
+          setAppointment(null);
+          return;
+        }
+
+        const items = data.items ?? [];
+        const now = new Date();
+
+        // خذ أقرب موعد قادم
+        const upcoming = items
+          .map((a: any) => ({
+            ...a,
+            _d: new Date(a.startsAt),
+          }))
+          .filter((a: any) => a._d.getTime() > now.getTime())
+          .sort((a: any, b: any) => a._d.getTime() - b._d.getTime())[0];
+
+        if (!upcoming) {
+          setAppointment(null);
+          return;
+        }
+
+        const d = new Date(upcoming.startsAt);
+        const date = d.toLocaleDateString("de-DE");
+        const time = d.toLocaleTimeString("de-DE", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        // إذا الباك-إند بيرجع therapist/email
+        const therapistName =
+          upcoming?.therapist?.name ||
+          upcoming?.therapist?.email ||
+          upcoming?.therapistEmail ||
+          undefined;
+
+        setAppointment({
+          date,
+          time,
+          name: therapistName,
+        });
       } catch (e) {
         console.log("Fehler beim Laden:", e);
+        setAppointment(null);
       }
     };
 
@@ -73,9 +131,10 @@ export default function Menu() {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("user");
-      await AsyncStorage.removeItem("nextAppointment");
+      await AsyncStorage.removeItem("token");
 
       setMenuOpen(false);
+      setAppointment(null);
 
       router.replace("/login-patient");
     } catch (e) {
@@ -165,14 +224,19 @@ export default function Menu() {
         </View>
 
         {/* Termin CTA */}
-        <Pressable style={styles.apptBtn} onPress={() => router.push("/appointment")}>
+        <Pressable
+          style={styles.apptBtn}
+          onPress={() => router.push("/appointment")}
+        >
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
         </Pressable>
 
         {/* DON’T PANIC */}
         <Pressable style={styles.panic} onPress={() => router.push("/panic")}>
           <Ionicons name="megaphone" size={22} color="#1f2937" />
-          <Text style={styles.panicText}>DON’T{"\n"}PANIC</Text>
+          <Text style={styles.panicText}>
+            DON’T{"\n"}PANIC
+          </Text>
         </Pressable>
 
         <View style={{ flex: 1 }} />
@@ -183,13 +247,19 @@ export default function Menu() {
       {/* MENU OVERLAY */}
       {menuOpen && (
         <View style={styles.menuOverlay}>
-          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => setMenuOpen(false)}
+          />
 
           <View style={styles.menuCard}>
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
 
-            <Pressable style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => setMenuOpen(false)}
+            >
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
@@ -231,7 +301,10 @@ export default function Menu() {
               </Pressable>
             </View>
 
-            <Pressable style={styles.menuItem} onPress={() => router.push("/profile")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => router.push("/profile")}
+            >
               <Text style={styles.menuText}>Mein Profil</Text>
             </Pressable>
 
@@ -242,7 +315,10 @@ export default function Menu() {
               <Text style={styles.menuText}>Übungen</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => router.push("/diary")}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => router.push("/diary")}
+            >
               <Text style={styles.menuText}>Tagebuch</Text>
             </Pressable>
 
@@ -376,6 +452,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-
-

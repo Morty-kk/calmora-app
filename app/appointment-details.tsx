@@ -1,9 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Alert, ImageBackground, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  Alert,
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-type Params = { id?: string; name?: string };
+import { BACKEND_URL } from '../constants/backend';
+
+type Params = { id?: string; name?: string; email?: string };
 
 const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const BASE_SLOTS = ['09:00', '09:30', '10:15', '12:15', '13:00']; // demo
@@ -20,12 +31,18 @@ function buildMonth(year: number, month: number) {
 }
 
 export default function AppointmentDetails() {
-  const { name } = useLocalSearchParams<Params>();
+  const { name, email } = useLocalSearchParams<Params>();
+
   const [current, setCurrent] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const days = useMemo(() => buildMonth(current.getFullYear(), current.getMonth()), [current]);
+
+  const days = useMemo(
+    () => buildMonth(current.getFullYear(), current.getMonth()),
+    [current]
+  );
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -46,17 +63,69 @@ export default function AppointmentDetails() {
     return BASE_SLOTS;
   };
 
- const onConfirm = () => {
-  if (!selectedDate || !slot) {
-    Alert.alert('Bitte auswählen', 'Datum und Uhrzeit wählen.');
-    return;
-  }
-  const d = selectedDate.toLocaleDateString('de-DE'); // z.B. 28.02.2025
-  router.push({ pathname: '/appointment-success', params: { date: d, time: slot, name: name ?? 'Therapeut' } });
-};
+  const onConfirm = async () => {
+    if (!selectedDate || !slot) {
+      Alert.alert('Bitte auswählen', 'Datum und Uhrzeit wählen.');
+      return;
+    }
+
+    try {
+      // ✅ token من AsyncStorage (أنت مخزنه وقت login)
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Login', 'Bitte zuerst anmelden.');
+        return;
+      }
+
+      // ✅ كوّن startsAt من selectedDate + slot
+      const [hh, mm] = slot.split(':').map(Number);
+      const startsAt = new Date(selectedDate);
+      startsAt.setHours(hh, mm, 0, 0);
+
+      // ✅ الطبيب المختار من الصفحة السابقة
+      const therapistEmail = (email ?? 'therapist@example.com').trim();
+
+      const res = await fetch(`${BACKEND_URL}/appointments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          startsAt: startsAt.toISOString(),
+          note: notes?.trim() ? notes.trim() : null,
+          therapistEmail,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert(
+          'Fehler',
+          data?.error || data?.message || 'Buchung fehlgeschlagen'
+        );
+        return;
+      }
+
+      // ✅ نجاح → روح على success مثل ما عندك
+      const d = selectedDate.toLocaleDateString('de-DE');
+      router.push({
+        pathname: '/appointment-success',
+        params: { date: d, time: slot, name: name ?? 'Therapeut' },
+      });
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Fehler', 'Server nicht erreichbar.');
+    }
+  };
 
   return (
-    <ImageBackground source={require('../assets/bg.png')} style={s.bg} resizeMode="cover">
+    <ImageBackground
+      source={require('../assets/bg.png')}
+      style={s.bg}
+      resizeMode="cover"
+    >
       <View style={s.wrap}>
         {/* Header */}
         <View style={s.headerRow}>
@@ -69,19 +138,33 @@ export default function AppointmentDetails() {
 
         {/* Monat */}
         <View style={s.monthRow}>
-          <Pressable onPress={() => setCurrent(c => new Date(c.getFullYear(), c.getMonth() - 1, 1))} style={s.monthBtn}>
+          <Pressable
+            onPress={() =>
+              setCurrent((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))
+            }
+            style={s.monthBtn}
+          >
             <Ionicons name="chevron-back" size={16} />
           </Pressable>
-          <Text style={s.monthTitle}>{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</Text>
-          <Pressable onPress={() => setCurrent(c => new Date(c.getFullYear(), c.getMonth() + 1, 1))} style={s.monthBtn}>
+          <Text style={s.monthTitle}>
+            {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
+          </Text>
+          <Pressable
+            onPress={() =>
+              setCurrent((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))
+            }
+            style={s.monthBtn}
+          >
             <Ionicons name="chevron-forward" size={16} />
           </Pressable>
         </View>
 
         {/* Wochentage */}
         <View style={s.weekRow}>
-          {WEEK.map(w => (
-            <Text key={w} style={s.weekCell}>{w}</Text>
+          {WEEK.map((w) => (
+            <Text key={w} style={s.weekCell}>
+              {w}
+            </Text>
           ))}
         </View>
 
@@ -91,10 +174,14 @@ export default function AppointmentDetails() {
             const inMonth = d.getMonth() === current.getMonth();
             const isToday = sameDay(d, today);
             const isSelected = selectedDate ? sameDay(d, selectedDate) : false;
+
             return (
               <Pressable
                 key={i}
-                onPress={() => { setSelectedDate(new Date(d)); setSlot(null); }}
+                onPress={() => {
+                  setSelectedDate(new Date(d));
+                  setSlot(null);
+                }}
                 style={[
                   s.dayCell,
                   !inMonth && { opacity: 0.35 },
@@ -102,7 +189,9 @@ export default function AppointmentDetails() {
                   isToday && !isSelected && s.dayToday,
                 ]}
               >
-                <Text style={[s.dayText, isSelected && { color: '#fff' }]}>{d.getDate()}</Text>
+                <Text style={[s.dayText, isSelected && { color: '#fff' }]}>
+                  {d.getDate()}
+                </Text>
               </Pressable>
             );
           })}
@@ -110,14 +199,22 @@ export default function AppointmentDetails() {
 
         {/* Datum */}
         <Text style={s.dateLine}>
-          {selectedDate ? selectedDate.toLocaleDateString('de-DE') : new Date().toLocaleDateString('de-DE')}
+          {selectedDate
+            ? selectedDate.toLocaleDateString('de-DE')
+            : new Date().toLocaleDateString('de-DE')}
         </Text>
 
         {/* Slots */}
         <View style={s.slotRow}>
-          {(selectedDate ? slotsForDay(selectedDate) : BASE_SLOTS).map(t => (
-            <Pressable key={t} onPress={() => setSlot(t)} style={[s.slotChip, slot === t && s.slotActive]}>
-              <Text style={[s.slotText, slot === t && { color: '#fff' }]}>{t}</Text>
+          {(selectedDate ? slotsForDay(selectedDate) : BASE_SLOTS).map((t) => (
+            <Pressable
+              key={t}
+              onPress={() => setSlot(t)}
+              style={[s.slotChip, slot === t && s.slotActive]}
+            >
+              <Text style={[s.slotText, slot === t && { color: '#fff' }]}>
+                {t}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -143,20 +240,76 @@ export default function AppointmentDetails() {
 const s = StyleSheet.create({
   bg: { flex: 1 },
   wrap: { flex: 1, padding: 16, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   line: { height: 1, backgroundColor: '#00000030', marginVertical: 10 },
 
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 6 },
-  monthBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffffcc' },
-  monthTitle: { fontSize: 16, letterSpacing: 2, textTransform: 'capitalize', color: '#6b7280', fontWeight: '700' },
+  monthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 6,
+  },
+  monthBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffffcc',
+  },
+  monthTitle: {
+    fontSize: 16,
+    letterSpacing: 2,
+    textTransform: 'capitalize',
+    color: '#6b7280',
+    fontWeight: '700',
+  },
 
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6, marginBottom: 4 },
-  weekCell: { width: 36, textAlign: 'center', color: '#6b7280', fontWeight: '700' },
+  weekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 6,
+    marginBottom: 4,
+  },
+  weekCell: {
+    width: 36,
+    textAlign: 'center',
+    color: '#6b7280',
+    fontWeight: '700',
+  },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'space-between', marginBottom: 10 },
-  dayCell: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffffcc' },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  dayCell: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffffcc',
+  },
   daySelected: { backgroundColor: '#f43f5e' },
   dayToday: { borderWidth: 1, borderColor: '#9ca3af' },
   dayText: { color: '#111827', fontWeight: '700' },
@@ -164,12 +317,31 @@ const s = StyleSheet.create({
   dateLine: { marginTop: 4, marginBottom: 6, color: '#6b7280' },
 
   slotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
-  slotChip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#e5e7eb' },
+  slotChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: '#e5e7eb',
+  },
   slotActive: { backgroundColor: '#f43f5e' },
   slotText: { color: '#111827', fontWeight: '700' },
 
-  notes: { minHeight: 80, borderWidth: 1, borderColor: '#9ca3af', borderRadius: 10, padding: 10, backgroundColor: '#ffffffaa', marginBottom: 12 },
+  notes: {
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: '#9ca3af',
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: '#ffffffaa',
+    marginBottom: 12,
+  },
 
-  primaryBtn: { alignSelf: 'center', backgroundColor: '#F8E3D7', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 18 },
+  primaryBtn: {
+    alignSelf: 'center',
+    backgroundColor: '#F8E3D7',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
   primaryText: { fontWeight: '800', color: '#111827' },
 });
