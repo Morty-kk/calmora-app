@@ -4,20 +4,25 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    ImageBackground,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
+import BottomTabs from "../components/BottomTabs";
+import CustomDrawer from "../components/Customrawer";
 import { useAuth } from "../context/AuthContext";
 import {
-  Conversation,
-  createConversation,
-  getConversations,
+    Conversation,
+    createConversation,
+    getConversations,
 } from "../services/api";
 
 function formatTimestamp(value?: string | null) {
@@ -43,6 +48,7 @@ export default function ChatList() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadConversations = useCallback(async () => {
     if (!token) {
@@ -125,7 +131,7 @@ export default function ChatList() {
       : "";
 
     return (
-      <Pressable
+      <TouchableOpacity
         style={styles.row}
         onPress={() =>
           router.push({
@@ -136,11 +142,14 @@ export default function ChatList() {
             },
           })
         }
+        activeOpacity={0.7}
       >
-        <Image
-          source={require("../assets/profile-placeholder.jpg")}
-          style={styles.avatar}
-        />
+        <View style={styles.avatarContainer}>
+          <Image
+            source={require("../assets/profile-placeholder.jpg")}
+            style={styles.avatar}
+          />
+        </View>
 
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{partner.email}</Text>
@@ -150,94 +159,185 @@ export default function ChatList() {
         </View>
 
         <View style={styles.meta}>
-          {timeLabel ? <Text style={styles.time}>{timeLabel}</Text> : null}
+          {timeLabel && <Text style={styles.time}>{timeLabel}</Text>}
+          <Ionicons name="chevron-forward" size={20} color="#9E86B9" />
         </View>
-      </Pressable>
+      </TouchableOpacity>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} />
-        </Pressable>
+    <ImageBackground
+      source={require("../assets/bg.png")}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <View style={styles.wrap}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color="#2B2B2B" />
+          </TouchableOpacity>
 
-        <Text style={styles.title}>Calmora</Text>
+          <Text style={styles.brand}>Calmora</Text>
 
-        <Ionicons name="menu" size={22} />
+          <TouchableOpacity onPress={() => setMenuOpen(true)} activeOpacity={0.7}>
+            <Ionicons name="menu" size={24} color="#2B2B2B" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Hero Section */}
+        <View style={styles.hero}>
+          <View style={styles.heroIconContainer}>
+            <Ionicons name="chatbubbles" size={36} color="#9E86B9" />
+          </View>
+          <Text style={styles.heroTitle}>Meine Chats</Text>
+        </View>
+
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#9E86B9" />
+          </View>
+        ) : error ? (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle" size={32} color="#EF4444" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : conversations.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyCard}>
+              <Ionicons name="chatbubble-outline" size={48} color="#9E86B9" />
+              <Text style={styles.emptyTitle}>Keine Chats</Text>
+              <Text style={styles.emptyText}>Du hast noch keine Unterhaltungen.</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.startButton} 
+              onPress={startDemoChat}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle" size={20} color="#fff" />
+              <Text style={styles.startButtonText}>Demo Chat starten</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={conversations}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
 
-      <Text style={styles.subtitle}>Chatliste</Text>
-
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="small" color="#7C6FB3" />
-        </View>
-      ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : conversations.length === 0 ? (
-        <View>
-          <Text style={styles.emptyText}>Keine Unterhaltungen gefunden.</Text>
-
-          <Pressable style={styles.startButton} onPress={startDemoChat}>
-            <Text style={styles.startButtonText}>Start Chat (Demo)</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <FlatList
-          data={conversations}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-        />
+      {/* Drawer Modal */}
+      {menuOpen && (
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <View style={styles.drawerContainer}>
+            <Pressable
+              style={styles.drawerOverlay}
+              onPress={() => setMenuOpen(false)}
+            />
+            <View style={styles.drawerContent}>
+              <CustomDrawer
+                navigation={{
+                  navigate: (route: string) => {
+                    router.push(route as any);
+                    setMenuOpen(false);
+                  },
+                }}
+                onLogout={() => {
+                  setMenuOpen(false);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
       )}
-    </View>
+
+      <BottomTabs />
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FADDC8",
+  },
+  wrap: {
+    flex: 1,
     padding: 16,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    paddingTop: 8,
+    marginBottom: 8,
   },
-  title: {
-    fontSize: 20,
+  brand: {
+    fontSize: 22,
     fontWeight: "700",
-    color: "#7C6FB3",
+    color: "#2B2B2B",
   },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 12,
+
+  hero: {
+    alignItems: "center",
+    paddingVertical: 20,
+    gap: 12,
   },
+  heroIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#2B2B2B",
+  },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8E3D7",
-    borderRadius: 14,
-    padding: 12,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  avatarContainer: {
+    marginRight: 12,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: "#F3E8FF",
   },
   name: {
     fontWeight: "700",
     fontSize: 16,
+    color: "#2B2B2B",
+    marginBottom: 4,
   },
   status: {
-    fontSize: 12,
-    opacity: 0.7,
+    fontSize: 14,
+    color: "#666",
   },
   listContent: {
     paddingBottom: 20,
@@ -245,35 +345,96 @@ const styles = StyleSheet.create({
   meta: {
     alignItems: "flex-end",
     justifyContent: "center",
-    minWidth: 60,
+    gap: 4,
   },
   time: {
     fontSize: 12,
-    color: "#7C6FB3",
-  },
-  centered: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  emptyText: {
-    marginTop: 20,
-    color: "#7C6FB3",
-  },
-  errorText: {
-    marginTop: 20,
-    color: "#B00020",
+    color: "#999",
+    marginBottom: 4,
   },
 
-  // ✅ زر إنشاء محادثة Demo
-  startButton: {
-    marginTop: 14,
-    backgroundColor: "#7C6FB3",
-    paddingVertical: 12,
-    borderRadius: 12,
+  centered: {
+    marginTop: 40,
     alignItems: "center",
   },
-  startButtonText: {
-    color: "white",
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  emptyCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 32,
+    alignItems: "center",
+    gap: 12,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: "700",
+    color: "#2B2B2B",
+  },
+  emptyText: {
+    fontSize: 15,
+    color: "#666",
+    textAlign: "center",
+  },
+
+  errorCard: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    gap: 12,
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 15,
+    color: "#DC2626",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+
+  startButton: {
+    marginTop: 20,
+    backgroundColor: "#9E86B9",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  startButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  /* Drawer */
+  drawerContainer: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  drawerContent: {
+    width: 280,
+    height: "100%",
   },
 });

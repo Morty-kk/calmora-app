@@ -4,16 +4,18 @@ const prisma = require("./prisma");
 async function createAppointment(req, res) {
   try {
     const patientId = req.user.id;
-    const { startsAt, note } = req.body;
+    const { startsAt, note, therapistEmail } = req.body;
 
     if (!startsAt) return res.status(400).json({ error: "startsAt is required" });
+    if (!therapistEmail) return res.status(400).json({ error: "therapistEmail is required" });
 
     const therapist = await prisma.user.findUnique({
-      where: { email: "therapist@example.com" },
-      select: { id: true },
+      where: { email: therapistEmail },
+      select: { id: true, role: true },
     });
 
     if (!therapist) return res.status(404).json({ error: "Therapist not found" });
+    if (therapist.role !== "THERAPIST") return res.status(400).json({ error: "User is not a therapist" });
 
     const appointment = await prisma.appointment.create({
       data: {

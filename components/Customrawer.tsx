@@ -1,67 +1,158 @@
-import { DrawerContentComponentProps } from "@react-navigation/drawer";
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-type Props = DrawerContentComponentProps & {
+type Props = {
+  navigation: any;
   onLogout?: () => void;
 };
 
 const CustomDrawer: React.FC<Props> = ({ navigation, onLogout }) => {
+  const [therapyExpanded, setTherapyExpanded] = useState(false);
+  const [profileExpanded, setProfileExpanded] = useState(false);
+
   const go = (routeName: string) => {
     navigation.navigate(routeName as never);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.header}>Menü:</Text>
+      {/* Header */}
+      <View style={styles.drawerHeader}>
+        <View style={styles.headerIconContainer}>
+          <Ionicons name="menu" size={28} color="#9E86B9" />
+        </View>
+        <Text style={styles.headerTitle}>Menü</Text>
+      </View>
 
+      <ScrollView 
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Home */}
+        <TouchableOpacity 
+          onPress={() => go("menu")} 
+          style={styles.menuItem}
+          activeOpacity={0.7}
+        >
+          <View style={styles.menuItemIcon}>
+            <Ionicons name="home" size={22} color="#9E86B9" />
+          </View>
+          <Text style={styles.menuItemText}>Home</Text>
+        </TouchableOpacity>
+
+        {/* Meine Therapie */}
         <View style={styles.section}>
-          <TouchableOpacity onPress={() => go("Home")} style={styles.item}>
-            <Text style={styles.itemText}>Home</Text>
+          <TouchableOpacity 
+            onPress={() => setTherapyExpanded(!therapyExpanded)}
+            style={styles.sectionHeader}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="medical" size={20} color="#9E86B9" />
+              </View>
+              <Text style={styles.sectionTitle}>Meine Therapie</Text>
+            </View>
+            <Ionicons 
+              name={therapyExpanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color="#9E86B9" 
+            />
           </TouchableOpacity>
+
+          {therapyExpanded && (
+            <View style={styles.subMenu}>
+              <TouchableOpacity 
+                onPress={() => go("/appointment")} 
+                style={styles.subMenuItem}
+                activeOpacity={0.7}
+              >
+                <View style={styles.subMenuDot} />
+                <Text style={styles.subMenuText}>Sitzungen</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => go("/appointment")} 
+                style={styles.subMenuItem}
+                activeOpacity={0.7}
+              >
+                <View style={styles.subMenuDot} />
+                <Text style={styles.subMenuText}>Termine</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => go("/chat-list")} 
+                style={styles.subMenuItem}
+                activeOpacity={0.7}
+              >
+                <View style={styles.subMenuDot} />
+                <Text style={styles.subMenuText}>Chat</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
+        {/* Mein Profil Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Meine Therapie</Text>
-          <TouchableOpacity onPress={() => go("Sitzungen")} style={styles.item}>
-            <Text style={styles.itemText}>Sitzungen</Text>
+          <TouchableOpacity 
+            onPress={() => setProfileExpanded(!profileExpanded)}
+            style={styles.sectionHeader}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="person" size={20} color="#9E86B9" />
+              </View>
+              <Text style={styles.sectionTitle}>Mein Profil</Text>
+            </View>
+            <Ionicons 
+              name={profileExpanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color="#9E86B9" 
+            />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => go("Termine")} style={styles.item}>
-            <Text style={styles.itemText}>Termine</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => go("Chat")} style={styles.item}>
-            <Text style={styles.itemText}>Chat</Text>
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mein Profil</Text>
-          <TouchableOpacity onPress={() => go("Uebungen")} style={styles.item}>
-            <Text style={styles.itemText}>Übungen</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => go("Tagebuch")} style={styles.item}>
-            <Text style={styles.itemText}>Tagebuch</Text>
-          </TouchableOpacity>
+          {profileExpanded && (
+            <View style={styles.subMenu}>
+              <TouchableOpacity 
+                onPress={() => go("Uebungen")} 
+                style={styles.subMenuItem}
+                activeOpacity={0.7}
+              >
+                <View style={styles.subMenuDot} />
+                <Text style={styles.subMenuText}>Übungen</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => go("/diary")} 
+                style={styles.subMenuItem}
+                activeOpacity={0.7}
+              >
+                <View style={styles.subMenuDot} />
+                <Text style={styles.subMenuText}>Tagebuch</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
 
+      {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
           onPress={() => {
             if (onLogout) onLogout();
             else navigation.reset({ index: 0, routes: [{ name: "Login" }] });
           }}
-          style={styles.logout}
+          style={styles.logoutButton}
+          activeOpacity={0.7}
         >
-          <Text style={styles.logoutText}>abmelden</Text>
+          <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+          <Text style={styles.logoutText}>Abmelden</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -71,52 +162,149 @@ const CustomDrawer: React.FC<Props> = ({ navigation, onLogout }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5D8D0", // peach
-    width: 280,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    backgroundColor: "#F5D8D0",
   },
-  scroll: {
+
+  /* HEADER */
+  drawerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 16,
+    backgroundColor: "#F9EDE9",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5C9C1",
   },
-  header: {
-    fontSize: 20,
+  headerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F3E6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 24,
     fontWeight: "700",
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#BFA9A0",
-    paddingBottom: 10,
+    color: "#1F2937",
   },
+
+  /* SCROLL */
+  scroll: {
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+
+  /* MENU ITEM */
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "rgba(255,255,255,0.6)",
+  },
+  menuItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3E6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+
+  /* SECTION */
   section: {
-    marginTop: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#D8BFB7",
-    paddingBottom: 12,
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    marginBottom: 4,
+  },
+  sectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3E6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
   sectionTitle: {
-    color: "#4A3F3C",
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1F2937",
   },
-  item: {
-    paddingVertical: 6,
+
+  /* SUBMENU */
+  subMenu: {
+    paddingLeft: 24,
+    paddingTop: 4,
   },
-  itemText: {
-    color: "#6B5B58",
-    fontSize: 14,
+  subMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 4,
   },
+  subMenuDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#9E86B9",
+    marginRight: 12,
+  },
+  subMenuText: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  /* FOOTER */
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#D8BFB7",
+    borderTopColor: "#E5C9C1",
+    backgroundColor: "#F9EDE9",
   },
-  logout: {},
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    gap: 8,
+  },
   logoutText: {
-    color: "#B12A2A",
-    fontWeight: "600",
+    color: "#EF4444",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
 

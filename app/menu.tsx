@@ -5,12 +5,16 @@ import React, { useEffect, useState } from "react";
 
 import {
   ImageBackground,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
+  TouchableOpacity,
+  View
 } from "react-native";
 import BottomTabs from "../components/BottomTabs";
+import CustomDrawer from "../components/Customrawer";
 import { BACKEND_URL } from "../constants/backend";
 import { useNotify } from "../context/NotifyContext";
 
@@ -24,12 +28,12 @@ function Tile({
   onPress?: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.tile}>
+    <TouchableOpacity onPress={onPress} style={styles.tile} activeOpacity={0.7}>
       <View style={{ alignItems: "center", gap: 6 }}>
         {icon}
         <Text style={styles.tileTitle}>{title}</Text>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
@@ -148,47 +152,63 @@ export default function Menu() {
       style={styles.bg}
       resizeMode="cover"
     >
-      <View style={styles.wrap}>
+      <ScrollView style={styles.wrap} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brand}>Calmora</Text>
 
-          <Pressable onPress={() => setMenuOpen(true)}>
-            <Ionicons name="menu" size={22} color="#2B2B2B" />
-          </Pressable>
+          <TouchableOpacity onPress={() => setMenuOpen(true)} activeOpacity={0.7}>
+            <Ionicons name="menu" size={24} color="#2B2B2B" />
+          </TouchableOpacity>
         </View>
 
-        {/* Greeting */}
-        <Text style={styles.greeting}>
-          Hey {userName}, wie schön,{"\n"}
-          dass du da bist
-        </Text>
-
-        <View style={styles.divider} />
-
-        {/* Reminder */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Remind:</Text>
-
-          {appointment ? (
-            <Text style={styles.cardText}>
-              Die nächste Sitzung:{" "}
-              <Text style={styles.cardStrong}>
-                {appointment.date}, {appointment.time}
-              </Text>
-              {appointment.name ? ` (mit ${appointment.name})` : ""}
-            </Text>
-          ) : (
-            <Text style={styles.cardText}>Kein Termin geplant</Text>
-          )}
+        {/* Hero Section */}
+        <View style={styles.hero}>
+          <View style={styles.heroIconContainer}>
+            <Ionicons name="home" size={36} color="#9E86B9" />
+          </View>
+          <Text style={styles.heroTitle}>
+            Hey {userName},{"\n"}wie schön, dass du da bist
+          </Text>
         </View>
+
+        {/* Reminder Card */}
+        {appointment && (
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderHeader}>
+              <Ionicons name="calendar" size={20} color="#9E86B9" />
+              <Text style={styles.reminderLabel}>Nächster Termin</Text>
+            </View>
+            <View style={styles.reminderContent}>
+              <View style={styles.reminderRow}>
+                <Ionicons name="time-outline" size={18} color="#666" />
+                <Text style={styles.reminderText}>
+                  {appointment.date} um {appointment.time}
+                </Text>
+              </View>
+              {appointment.name && (
+                <View style={styles.reminderRow}>
+                  <Ionicons name="person-outline" size={18} color="#666" />
+                  <Text style={styles.reminderText}>{appointment.name}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {!appointment && (
+          <View style={styles.noAppointmentCard}>
+            <Ionicons name="calendar-outline" size={24} color="#999" />
+            <Text style={styles.noAppointmentText}>Kein Termin geplant</Text>
+          </View>
+        )}
 
         {/* Übungen */}
-        <Text style={styles.sectionTitle}>Übungen:</Text>
+        <Text style={styles.sectionTitle}>Übungen</Text>
         <View style={styles.grid}>
           <Tile
             title="Atmung"
-            icon={<Ionicons name="leaf-outline" size={28} color="#2B2B2B" />}
+            icon={<Ionicons name="leaf" size={32} color="#9E86B9" />}
             onPress={() => router.push("/breath")}
           />
 
@@ -197,8 +217,8 @@ export default function Menu() {
             icon={
               <MaterialCommunityIcons
                 name="meditation"
-                size={28}
-                color="#2B2B2B"
+                size={32}
+                color="#9E86B9"
               />
             }
             onPress={() => router.push("/achtsamkeit")}
@@ -209,8 +229,8 @@ export default function Menu() {
             icon={
               <MaterialCommunityIcons
                 name="human-male-board"
-                size={28}
-                color="#2B2B2B"
+                size={32}
+                color="#9E86B9"
               />
             }
             onPress={() => router.push("/pme")}
@@ -218,118 +238,67 @@ export default function Menu() {
 
           <Tile
             title="Meditation"
-            icon={<Ionicons name="flower-outline" size={28} color="#2B2B2B" />}
+            icon={<Ionicons name="flower" size={32} color="#9E86B9" />}
             onPress={() => router.push("/meditation")}
           />
         </View>
 
         {/* Termin CTA */}
-        <Pressable
+        <TouchableOpacity
           style={styles.apptBtn}
           onPress={() => router.push("/appointment")}
+          activeOpacity={0.7}
         >
+          <Ionicons name="add-circle" size={20} color="#fff" />
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
-        </Pressable>
+        </TouchableOpacity>
 
-        {/* DON’T PANIC */}
-        <Pressable style={styles.panic} onPress={() => router.push("/panic")}>
-          <Ionicons name="megaphone" size={22} color="#1f2937" />
+        {/* DON'T PANIC */}
+        <TouchableOpacity 
+          style={styles.panic} 
+          onPress={() => router.push("/panic")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="heart" size={28} color="#fff" />
           <Text style={styles.panicText}>
-            DON’T{"\n"}PANIC
+            DON'T PANIC{"\n"}Atemübung starten
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
-        <View style={{ flex: 1 }} />
+        <View style={{ height: 120 }} />
+      </ScrollView>
 
-        <BottomTabs />
-      </View>
+      <BottomTabs />
 
       {/* MENU OVERLAY */}
       {menuOpen && (
-        <View style={styles.menuOverlay}>
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setMenuOpen(false)}
-          />
-
-          <View style={styles.menuCard}>
-            <Text style={styles.menuTitle}>Menü:</Text>
-            <View style={styles.menuDivider} />
-
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <View style={styles.drawerContainer}>
             <Pressable
-              style={styles.menuItem}
+              style={styles.drawerOverlay}
               onPress={() => setMenuOpen(false)}
-            >
-              <Text style={styles.menuText}>Home</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem}>
-              <Text style={styles.menuText}>Meine Therapie</Text>
-            </Pressable>
-
-            <View style={{ marginLeft: 16 }}>
-              <Pressable style={styles.menuItem}>
-                <Text style={styles.subMenuText}>Sitzungen</Text>
-              </Pressable>
-
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => router.push("/appointment")}
-              >
-                <Text style={styles.subMenuText}>Termine</Text>
-              </Pressable>
-
-              {/* ✅ Chat + Badge */}
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  router.push("/chat");
+            />
+            <View style={styles.drawerContent}>
+              <CustomDrawer
+                navigation={{
+                  navigate: (route: string) => {
+                    router.push(route as any);
+                    setMenuOpen(false);
+                  },
                 }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.subMenuText}>Chat</Text>
-
-                  {unreadChats > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>
-                        {unreadChats > 99 ? "99+" : unreadChats}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
+                onLogout={() => {
+                  setMenuOpen(false);
+                  handleLogout();
+                }}
+              />
             </View>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/profile")}
-            >
-              <Text style={styles.menuText}>Mein Profil</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/mindfulness")}
-            >
-              <Text style={styles.menuText}>Übungen</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/diary")}
-            >
-              <Text style={styles.menuText}>Tagebuch</Text>
-            </Pressable>
-
-            <View style={styles.menuDivider} />
-
-            {/* LOGOUT */}
-            <Pressable style={styles.menuItem} onPress={handleLogout}>
-              <Text style={styles.logoutText}>abmelden</Text>
-            </Pressable>
           </View>
-        </View>
+        </Modal>
       )}
     </ImageBackground>
   );
@@ -337,118 +306,172 @@ export default function Menu() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  wrap: { flex: 1, padding: 16, paddingBottom: 120 },
+  wrap: { flex: 1, padding: 16 },
 
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingTop: 8,
   },
-  brand: { fontSize: 20, fontWeight: "700", opacity: 0.85, color: "#2B2B2B" },
+  brand: { fontSize: 22, fontWeight: "700", color: "#2B2B2B" },
 
-  greeting: {
-    fontSize: 18,
+  hero: {
+    alignItems: "center",
+    paddingVertical: 24,
+    gap: 12,
+  },
+  heroIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroTitle: {
+    fontSize: 22,
     fontWeight: "700",
-    color: "#3b4b7a",
-    marginTop: 8,
+    color: "#2B2B2B",
+    textAlign: "center",
+    lineHeight: 28,
   },
 
-  divider: { height: 1, backgroundColor: "#00000022", marginVertical: 12 },
-
-  card: {
-    backgroundColor: "#ffffffcc",
-    borderRadius: 14,
-    padding: 14,
-    gap: 6,
+  reminderCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  cardLabel: { fontWeight: "700", opacity: 0.6 },
-  cardText: { fontSize: 14, color: "#222" },
-  cardStrong: { fontWeight: "800" },
+  reminderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  reminderLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2B2B2B",
+  },
+  reminderContent: {
+    gap: 8,
+  },
+  reminderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  reminderText: {
+    fontSize: 15,
+    color: "#333",
+    fontWeight: "500",
+  },
 
-  sectionTitle: { fontSize: 20, fontWeight: "800", marginVertical: 10 },
+  noAppointmentCard: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 20,
+  },
+  noAppointmentText: {
+    fontSize: 15,
+    color: "#999",
+    fontWeight: "500",
+  },
 
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2B2B2B",
+    marginBottom: 12,
+  },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20 },
 
   tile: {
     width: "47%",
-    backgroundColor: "#F8E3D7",
-    paddingVertical: 18,
-    borderRadius: 14,
+    backgroundColor: "#fff",
+    paddingVertical: 24,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  tileTitle: { fontWeight: "600", textAlign: "center", color: "#2B2B2B" },
+  tileTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#2B2B2B",
+  },
 
   apptBtn: {
-    alignSelf: "center",
-    marginTop: 12,
-    backgroundColor: "#E3ECF7",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-  },
-  apptBtnText: { fontWeight: "700", color: "#111827" },
-
-  panic: {
-    backgroundColor: "#F7B9AE",
+    backgroundColor: "#9E86B9",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 16,
-  },
-  panicText: {
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 20,
-    color: "#1f2937",
-  },
-
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#00000040",
-  },
-  menuCard: {
-    position: "absolute",
-    right: 20,
-    top: 80,
-    bottom: 80,
-    width: "70%",
-    backgroundColor: "#FADDC8",
-    borderRadius: 32,
-    padding: 22,
+  apptBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
   },
 
-  menuTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  menuDivider: { height: 1, backgroundColor: "#00000040", marginVertical: 10 },
-
-  menuItem: { paddingVertical: 6 },
-
-  menuText: { fontSize: 16, color: "#111827" },
-  subMenuText: { fontSize: 14, color: "#475569" },
-
-  logoutText: { fontSize: 16, color: "#B91C1C", fontWeight: "700" },
-
-  // ✅ Badge Styles
-  badge: {
-    marginLeft: 8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 6,
-    backgroundColor: "red",
+  panic: {
+    backgroundColor: "#EF4444",
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  badgeText: {
-    color: "white",
-    fontSize: 11,
+  panicText: {
+    fontSize: 16,
     fontWeight: "700",
+    lineHeight: 20,
+    color: "#fff",
+    textAlign: "center",
+  },
+
+  /* DRAWER */
+  drawerContainer: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  drawerContent: {
+    width: 280,
+    height: "100%",
   },
 });
