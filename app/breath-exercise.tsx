@@ -37,9 +37,9 @@ export default function BreathExercise() {
 
   // Colors for phases
   const colors = {
-    ein: "#9E86B9", // purple
-    halten: "#FBBF24", // amber
-    aus: "#A78BFA", // purple
+    ein: "#A7C7F1", // blue
+    halten: "#F7EFAE", // yellow
+    aus: "#D8B7E8", // purple
   };
 
   const animateBreath = (toValue: number, duration: number) => {
@@ -121,37 +121,21 @@ export default function BreathExercise() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Header */}
+        {/* Header mit Back-Button */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.push("/breath")}
+            onPress={() => router.back()}
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={22} color="#111827" />
           </TouchableOpacity>
 
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{exercise.title}</Text>
-            <Text style={styles.subtitle}>
-              {phase === "einatmen" && "Atme ruhig und tief ein"}
-              {phase === "halten" && "Halte deinen Atem"}
-              {phase === "ausatmen" && "Lass langsam los"}
-            </Text>
-          </View>
+          <Text style={styles.title}>{exercise.title}</Text>
         </View>
 
-        {/* Content */}
+        {/* Inhalt zentriert */}
         <View style={styles.content}>
-          {/* Phase Indicator */}
-          <View style={styles.phaseIndicator}>
-            <Text style={styles.phaseLabel}>
-              {phase === "einatmen" && "Einatmen"}
-              {phase === "halten" && "Halten"}
-              {phase === "ausatmen" && "Ausatmen"}
-            </Text>
-          </View>
-
           {/* Animated Circle */}
           <Animated.View
             style={[
@@ -162,62 +146,28 @@ export default function BreathExercise() {
               },
             ]}
           >
-            <View style={styles.circleInner}>
-              <Ionicons
-                name={
-                  phase === "einatmen"
-                    ? "arrow-down"
-                    : phase === "halten"
-                    ? "pause"
-                    : "arrow-up"
-                }
-                size={48}
-                color="white"
-              />
-              <Text style={styles.time}>{counter}</Text>
-              <Text style={styles.timeUnit}>Sekunden</Text>
-            </View>
+            <Text style={styles.phaseText}>
+              {phase === "einatmen" && "atme ein"}
+              {phase === "halten" && "halte"}
+              {phase === "ausatmen" && "atme aus"}
+            </Text>
+            <Text style={styles.time}>{counter}s</Text>
           </Animated.View>
 
-          {/* Pattern Info */}
-          <View style={styles.patternInfo}>
-            <View style={styles.patternItem}>
-              <Ionicons name="arrow-down" size={16} color="#9E86B9" />
-              <Text style={styles.patternText}>{exercise.in}s</Text>
-            </View>
-            <View style={styles.patternItem}>
-              <Ionicons name="pause" size={16} color="#FBBF24" />
-              <Text style={styles.patternText}>{exercise.hold}s</Text>
-            </View>
-            <View style={styles.patternItem}>
-              <Ionicons name="arrow-up" size={16} color="#A78BFA" />
-              <Text style={styles.patternText}>{exercise.out}s</Text>
-            </View>
-          </View>
+          <View style={styles.buttons}>
+            <TouchableOpacity style={styles.startBtn} onPress={startExercise}>
+              <Text style={styles.btnTextWhite}>Start</Text>
+            </TouchableOpacity>
 
-          {/* Control Buttons */}
-          <View style={styles.controls}>
-            {!running ? (
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={startExercise}
-              >
-                <Ionicons name="play" size={24} color="white" />
-                <Text style={styles.primaryBtnText}>Start</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={() => setRunning(false)}
-              >
-                <Ionicons name="pause" size={24} color="white" />
-                <Text style={styles.primaryBtnText}>Pause</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={styles.pauseBtn}
+              onPress={() => setRunning(false)}
+            >
+              <Text style={styles.btnTextWhite}>Pause</Text>
+            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryBtn} onPress={endExercise}>
-              <Ionicons name="stop" size={20} color="#EF4444" />
-              <Text style={styles.secondaryBtnText}>Beenden</Text>
+            <TouchableOpacity style={styles.endBtn} onPress={endExercise}>
+              <Text style={styles.btnTextWhite}>Beenden</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -232,43 +182,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 40,
   },
 
   /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    marginBottom: 40,
+    gap: 10,
+    marginBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "rgba(255,255,255,0.9)",
   },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
+  title: { fontSize: 24, fontWeight: "600", color: "#111827" },
 
   /* CONTENT */
   content: {
@@ -277,132 +210,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  /* PHASE INDICATOR */
-  phaseIndicator: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginBottom: 40,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  phaseLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2937",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-
-  /* CIRCLE */
   circle: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 4,
+    borderColor: "#9E86B9",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  circleInner: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  time: {
-    fontSize: 72,
-    fontWeight: "800",
-    color: "white",
-    marginTop: 8,
-  },
-  timeUnit: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.9)",
-    marginTop: 4,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    marginBottom: 40,
   },
 
-  /* PATTERN INFO */
-  patternInfo: {
-    flexDirection: "row",
-    gap: 24,
-    marginTop: 40,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  patternItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  patternText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F2937",
-  },
+  phaseText: { fontSize: 20, fontWeight: "500", marginBottom: 6 },
+  time: { fontSize: 36, fontWeight: "800" },
 
-  /* CONTROLS */
-  controls: {
-    marginTop: 48,
+  buttons: {
+    flexDirection: "row",
     gap: 12,
-    width: "100%",
-    maxWidth: 300,
+    marginTop: 20,
   },
-  primaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+
+  startBtn: {
     backgroundColor: "#9E86B9",
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    gap: 8,
-    shadowColor: "#9E86B9",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
-  primaryBtnText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
+  pauseBtn: {
+    backgroundColor: "#C7AECF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
-  secondaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    gap: 8,
-    borderWidth: 2,
-    borderColor: "#FEE2E2",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+  endBtn: {
+    backgroundColor: "#E57373",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
-  secondaryBtnText: {
-    color: "#EF4444",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+
+  btnTextWhite: { color: "white", fontSize: 15, fontWeight: "600" },
 });
