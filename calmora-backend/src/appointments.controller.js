@@ -68,8 +68,87 @@ async function listTherapistAppointments(req, res) {
   }
 }
 
+// ... (خلي دوال createAppointment/listMyAppointments/listTherapistAppointments كما هي)
+
+// ✅ GET /appointments/:id
+async function getAppointmentById(req, res) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const appt = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        therapist: { select: { id: true, email: true, name: true } },
+        patient: { select: { id: true, email: true, name: true } },
+      },
+    });
+
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+
+    // ✅ صلاحيات: المريض أو المعالج فقط
+    const uid = req.user.id;
+    if (uid !== appt.patientId && uid !== appt.therapistId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    return res.json({ appointment: appt });
+  } catch (e) {
+    console.error("getAppointmentById error:", e);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+// ✅ PATCH /appointments/:id/cancel
+async function cancelAppointment(req, res) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const appt = await prisma.appointment.findUnique({ where: { id } });
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+
+    // ✅ صلاحيات
+    const uid = req.user.id;
+    if (uid !== appt.patientId && uid !== appt.therapistId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    // ✅ فقط إذا الموعد بالمستقبل
+    const now = new Date();
+    if (new Date(appt.startsAt).getTime() <= now.getTime()) {
+      return res.status(400).json({ error: "Cannot cancel past appointments" });
+    }
+
+    // ✅ إذا ملغى أصلاً
+    if ((appt.status || "").toUpperCase() === "CANCELLED") {
+      return res.status(400).json({ error: "Already cancelled" });
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+      include: {
+        therapist: { select: { id: true, email: true, name: true } },
+        patient: { select: { id: true, email: true, name: true } },
+      },
+    });
+
+    return res.json({ appointment: updated });
+  } catch (e) {
+    console.error("cancelAppointment error:", e);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
 module.exports = {
   createAppointment,
   listMyAppointments,
   listTherapistAppointments,
+
+  // ✅ جديد
+  getAppointmentById,
+  cancelAppointment,
 };
+
+

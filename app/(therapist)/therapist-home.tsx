@@ -4,12 +4,13 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { BACKEND_URL } from "../../constants/backend"; // ✅ تأكد من المسار عندك
+import { BACKEND_URL } from "../../constants/backend";
 import { useNotify } from "../../context/NotifyContext";
 
 type BackendAppointment = {
   id: number | string;
   startsAt: string; // ISO date from backend
+  status?: string | null; // ✅ مهم
   note?: string | null;
   patient?: { id: number | string; name?: string | null; email?: string | null };
 };
@@ -47,7 +48,12 @@ export default function TherapistHome() {
             return;
           }
 
-          setAppointments(data.items ?? []);
+          const items = (data.items ?? []) as BackendAppointment[];
+
+          // 🔎 للتأكد أن status عم يوصل من الباك-إند (اختياري)
+          // console.log("therapist items sample:", items[0]);
+
+          setAppointments(items);
         } catch (e) {
           console.log("TherapistHome load error:", e);
           setAppointments([]);
@@ -60,30 +66,31 @@ export default function TherapistHome() {
     }, [])
   );
 
-  // ✅ أقرب موعد قادم
+  // ✅ أقرب موعد قادم (غير ملغي)
   const nextAppointment = useMemo(() => {
-    const now = new Date();
+    const now = Date.now();
 
     const upcoming = [...appointments]
-      .map((a) => ({ ...a, d: new Date(a.startsAt) }))
-      .filter((a) => a.d.getTime() >= now.getTime())
-      .sort((a, b) => a.d.getTime() - b.d.getTime())[0];
+      .map((a) => ({
+        ...a,
+        t: new Date(a.startsAt).getTime(),
+        s: String(a.status || "").toUpperCase(),
+      }))
+      // ✅ مستقبل + مو ملغي
+      .filter((a) => a.t >= now && a.s !== "CANCELLED")
+      .sort((a, b) => a.t - b.t)[0];
 
     return upcoming ?? null;
   }, [appointments]);
 
   const nextPatientName = useMemo(() => {
     if (!nextAppointment) return "";
-    return (
-      nextAppointment?.patient?.name ||
-      nextAppointment?.patient?.email ||
-      "Patient"
-    );
+    return nextAppointment?.patient?.name || nextAppointment?.patient?.email || "Patient";
   }, [nextAppointment]);
 
   const nextDate = useMemo(() => {
     if (!nextAppointment) return null;
-    // نفس شكل الصورة: 2026-02-05
+    // شكل: 2026-02-05
     return new Date(nextAppointment.startsAt).toISOString().slice(0, 10);
   }, [nextAppointment]);
 
@@ -130,7 +137,7 @@ export default function TherapistHome() {
 
       <View style={styles.divider} />
 
-      {/*  Next session card */}
+      {/* Next session card */}
       <Pressable style={styles.cardLarge} onPress={openNextInAppointments}>
         <Text style={styles.cardTitle}>
           {loadingNext
@@ -166,26 +173,17 @@ export default function TherapistHome() {
         <Text style={styles.cardTitle}>Schnellzugriff</Text>
 
         <View style={styles.quickRow}>
-          <Pressable
-            style={styles.quickBtn}
-            onPress={() => router.push("/therapist-appointments")}
-          >
+          <Pressable style={styles.quickBtn} onPress={() => router.push("/therapist-appointments")}>
             <Ionicons name="calendar-outline" size={22} color="#111" />
             <Text style={styles.quickText}>Termin erstellen</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.quickBtn}
-            onPress={() => router.push("/sitzungverlauf")}
-          >
+          <Pressable style={styles.quickBtn} onPress={() => router.push("/sitzungverlauf")}>
             <Ionicons name="document-text-outline" size={22} color="#111" />
             <Text style={styles.quickText}>Sitzungsverlauf</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.quickBtn}
-            onPress={() => router.push("/therapist-patients")}
-          >
+          <Pressable style={styles.quickBtn} onPress={() => router.push("/therapist-patients")}>
             <Ionicons name="people-outline" size={22} color="#111" />
             <Text style={styles.quickText}>Patientenliste</Text>
           </Pressable>
@@ -194,10 +192,7 @@ export default function TherapistHome() {
 
       {/* Bottom Tabs */}
       <View style={styles.tabs}>
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.replace("/therapist-home")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
           <Ionicons name="home" size={22} color="#111" />
           <Text style={styles.tabTextActive}>Startseite</Text>
         </Pressable>
@@ -216,18 +211,12 @@ export default function TherapistHome() {
           <Text style={styles.tabText}>Chat</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.push("/therapist-patients")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.push("/therapist-patients")}>
           <Ionicons name="people-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Patienten</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.tab}
-          onPress={() => router.replace("/therapist-profile")}
-        >
+        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
           <Ionicons name="person-outline" size={22} color="#111" />
           <Text style={styles.tabText}>Profil</Text>
         </Pressable>
@@ -240,24 +229,15 @@ export default function TherapistHome() {
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-home")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-patients")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
               <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-appointments")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
@@ -281,10 +261,7 @@ export default function TherapistHome() {
               </View>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => go("/therapist-profile")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
               <Text style={styles.menuText}>Mein Profil</Text>
             </Pressable>
 
@@ -479,3 +456,4 @@ const styles = StyleSheet.create({
 
   logoutText: { color: "#B00000", fontSize: 16, fontWeight: "700" },
 });
+

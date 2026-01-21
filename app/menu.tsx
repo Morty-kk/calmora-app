@@ -2,14 +2,8 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
 
-import {
-  ImageBackground,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
 import BottomTabs from "../components/BottomTabs";
 import { BACKEND_URL } from "../constants/backend";
 import { useNotify } from "../context/NotifyContext";
@@ -85,13 +79,14 @@ export default function Menu() {
         const items = data.items ?? [];
         const now = new Date();
 
-        // خذ أقرب موعد قادم
+        // ✅ خذ أقرب موعد قادم + استبعد CANCELLED
         const upcoming = items
           .map((a: any) => ({
             ...a,
             _d: new Date(a.startsAt),
+            _status: String(a.status || "").toUpperCase(),
           }))
-          .filter((a: any) => a._d.getTime() > now.getTime())
+          .filter((a: any) => a._d.getTime() > now.getTime() && a._status !== "CANCELLED")
           .sort((a: any, b: any) => a._d.getTime() - b._d.getTime())[0];
 
         if (!upcoming) {
@@ -143,11 +138,7 @@ export default function Menu() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/bg.png")}
-      style={styles.bg}
-      resizeMode="cover"
-    >
+    <ImageBackground source={require("../assets/bg.png")} style={styles.bg} resizeMode="cover">
       <View style={styles.wrap}>
         {/* Header */}
         <View style={styles.header}>
@@ -194,25 +185,13 @@ export default function Menu() {
 
           <Tile
             title="Achtsamkeit"
-            icon={
-              <MaterialCommunityIcons
-                name="meditation"
-                size={28}
-                color="#2B2B2B"
-              />
-            }
+            icon={<MaterialCommunityIcons name="meditation" size={28} color="#2B2B2B" />}
             onPress={() => router.push("/achtsamkeit")}
           />
 
           <Tile
             title={"Progressive\nMuskelentspannung"}
-            icon={
-              <MaterialCommunityIcons
-                name="human-male-board"
-                size={28}
-                color="#2B2B2B"
-              />
-            }
+            icon={<MaterialCommunityIcons name="human-male-board" size={28} color="#2B2B2B" />}
             onPress={() => router.push("/pme")}
           />
 
@@ -224,10 +203,7 @@ export default function Menu() {
         </View>
 
         {/* Termin CTA */}
-        <Pressable
-          style={styles.apptBtn}
-          onPress={() => router.push("/appointment")}
-        >
+        <Pressable style={styles.apptBtn} onPress={() => router.push("/appointment")}>
           <Text style={styles.apptBtnText}>Neuen Termin vereinbaren</Text>
         </Pressable>
 
@@ -247,19 +223,13 @@ export default function Menu() {
       {/* MENU OVERLAY */}
       {menuOpen && (
         <View style={styles.menuOverlay}>
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setMenuOpen(false)}
-          />
+          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)} />
 
           <View style={styles.menuCard}>
             <Text style={styles.menuTitle}>Menü:</Text>
             <View style={styles.menuDivider} />
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => setMenuOpen(false)}
-            >
+            <Pressable style={styles.menuItem} onPress={() => setMenuOpen(false)}>
               <Text style={styles.menuText}>Home</Text>
             </Pressable>
 
@@ -268,14 +238,17 @@ export default function Menu() {
             </Pressable>
 
             <View style={{ marginLeft: 16 }}>
-              <Pressable style={styles.menuItem}>
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.push("/sitzungen");
+                }}
+              >
                 <Text style={styles.subMenuText}>Sitzungen</Text>
               </Pressable>
 
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => router.push("/appointment")}
-              >
+              <Pressable style={styles.menuItem} onPress={() => router.push("/appointment")}>
                 <Text style={styles.subMenuText}>Termine</Text>
               </Pressable>
 
@@ -292,33 +265,22 @@ export default function Menu() {
 
                   {unreadChats > 0 && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>
-                        {unreadChats > 99 ? "99+" : unreadChats}
-                      </Text>
+                      <Text style={styles.badgeText}>{unreadChats > 99 ? "99+" : unreadChats}</Text>
                     </View>
                   )}
                 </View>
               </Pressable>
             </View>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/profile")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push("/profile")}>
               <Text style={styles.menuText}>Mein Profil</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/mindfulness")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push("/mindfulness")}>
               <Text style={styles.menuText}>Übungen</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => router.push("/diary")}
-            >
+            <Pressable style={styles.menuItem} onPress={() => router.push("/diary")}>
               <Text style={styles.menuText}>Tagebuch</Text>
             </Pressable>
 

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -11,8 +12,25 @@ import {
   View,
 } from "react-native";
 
-import { api, Appointment } from "./appointmentsApi";
-import { getPatientById, PATIENTS } from "./patientsApi";
+import { BACKEND_URL } from "../../constants/backend";
+
+/** ===================== TYPES ===================== */
+type BackendAppointment = {
+  id: number | string;
+  startsAt: string;              // ISO
+  status?: string | null;        // BOOKED / CANCELLED / AVAILABLE ...
+  note?: string | null;
+  patient?: { id?: string | number; name?: string | null; email?: string | null } | null;
+};
+
+type UiAppointment = {
+  id: string;
+  date: string;      // YYYY-MM-DD
+  time: string;      // HH:MM
+  status: string;    // uppercase
+  note: string;
+  patientName: string;
+};
 
 type MonthDef = {
   name: string;
@@ -20,15 +38,6 @@ type MonthDef = {
   year: number;
   daysInMonth: number;
   firstDayIndex: number; // 0=So..6=Sa
-  isoPrefix: string; // "YYYY-MM-"
-};
-
-type EditDraft = {
-  id?: string;
-  date: string;
-  time: string;
-  patientId: string; 
-  note: string;
 };
 
 /** ===================== HELPERS ===================== */
@@ -37,49 +46,49 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 function daysInMonth(year: number, monthIndex: number) {
   return new Date(year, monthIndex + 1, 0).getDate();
 }
-
-// 0=Sunday..6=Saturday
 function firstDayIndex(year: number, monthIndex: number) {
   return new Date(year, monthIndex, 1).getDay();
 }
-
 function monthNameDE(monthIndex: number) {
   const names = [
-    "Januar",
-    "Februar",
-    "März",
-    "April",
-    "Mai",
-    "Juni",
-    "Juli",
-    "August",
-    "September",
-    "Oktober",
-    "November",
-    "Dezember",
+    "Januar","Februar","März","April","Mai","Juni",
+    "Juli","August","September","Oktober","November","Dezember",
   ];
   return names[monthIndex] ?? "Monat";
 }
-
 function toISODate(year: number, monthIndex: number, day: number) {
   return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
 }
-
-function sortByTime(a: Appointment, b: Appointment) {
-  return a.time.localeCompare(b.time);
+function toUiAppointments(items: BackendAppointment[]): UiAppointment[] {
+  return (items ?? []).map((a) => {
+    const d = new Date(a.startsAt);
+    const date = d.toISOString().slice(0, 10); // YYYY-MM-DD
+    const time = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    const status = String(a.status || "").toUpperCase();
+    const patientName =
+      a.patient?.name || a.patient?.email || (status === "BOOKED" ? "Patient" : "");
+    return {
+      id: String(a.id),
+      date,
+      time,
+      status,
+      note: a.note || "",
+      patientName,
+    };
+  });
 }
 
 /** ===================== UI COMPONENTS ===================== */
 function DayCell({
   day,
   isoDate,
-  hasAppointments,
+  hasBooked,     // ✅ فقط BOOKED
   isToday,
   onPress,
 }: {
   day: number | null;
   isoDate: string | null;
-  hasAppointments: boolean;
+  hasBooked: boolean;
   isToday: boolean;
   onPress: (isoDate: string) => void;
 }) {
@@ -90,13 +99,11 @@ function DayCell({
       <View
         style={[
           styles.circleBase,
-          hasAppointments ? styles.circleFilled : null,
-          !hasAppointments && isToday ? styles.circleToday : null,
+          hasBooked ? styles.circleFilled : null,       // ✅ أحمر فقط إذا BOOKED
+          !hasBooked && isToday ? styles.circleToday : null,
         ]}
       >
-        <Text style={hasAppointments ? styles.dayTextFilled : styles.dayText}>
-          {day}
-        </Text>
+        <Text style={hasBooked ? styles.dayTextFilled : styles.dayText}>{day}</Text>
       </View>
     </Pressable>
   );
@@ -104,12 +111,12 @@ function DayCell({
 
 function MonthCalendar({
   month,
-  apptDatesSet,
+  bookedDatesSet,
   onDayPress,
   todayISO,
 }: {
   month: MonthDef;
-  apptDatesSet: Set<string>;
+  bookedDatesSet: Set<string>;
   onDayPress: (isoDate: string) => void;
   todayISO: string;
 }) {
@@ -128,8 +135,11 @@ function MonthCalendar({
       <Text style={styles.monthTitle}>{month.name}</Text>
 
       <View style={styles.weekRow}>
-        {weekdays.map((w) => (
-          <Text key={w} style={[styles.weekday, w === "S" ? styles.sunday : null]}>
+        {weekdays.map((w, idx) => (
+          <Text
+            key={`${w}-${idx}`}
+            style={[styles.weekday, idx === 0 || idx === 6 ? styles.sunday : null]}
+          >
             {w}
           </Text>
         ))}
@@ -138,7 +148,7 @@ function MonthCalendar({
       <View style={styles.grid}>
         {grid.map((d, idx) => {
           const isoDate = d === null ? null : toISODate(month.year, month.monthIndex, d);
-          const hasAppointments = isoDate ? apptDatesSet.has(isoDate) : false;
+          const hasBooked = isoDate ? bookedDatesSet.has(isoDate) : false;
           const isToday = isoDate ? isoDate === todayISO : false;
 
           return (
@@ -146,7 +156,7 @@ function MonthCalendar({
               key={`${month.name}-${idx}`}
               day={d}
               isoDate={isoDate}
-              hasAppointments={hasAppointments}
+              hasBooked={hasBooked}
               isToday={isToday}
               onPress={onDayPress}
             />
@@ -165,369 +175,246 @@ export default function TherapistAppointments() {
   const params = useLocalSearchParams<{ date?: string }>();
 
   const [loading, setLoading] = useState(true);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<UiAppointment[]>([]);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  // محرر (إذا عندك لاحقاً إنشاء Slot)
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editMode, setEditMode] = useState<"add" | "edit">("add");
-  const [draft, setDraft] = useState<EditDraft>({
-    date: "2026-01-01",
-    time: "10:00",
-    patientId: "",
-    note: "",
-  });
+  const [draftNote, setDraftNote] = useState("");
 
   const year = 2026;
 
   const todayISO = useMemo(() => {
     const d = new Date();
-    const y = d.getFullYear();
-    const m = pad2(d.getMonth() + 1);
-    const day = pad2(d.getDate());
-    return `${y}-${m}-${day}`;
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   }, []);
 
   const months: MonthDef[] = useMemo(() => {
-    const list = Array.from({ length: 12 }, (_, i) => i); // 0..11
-    return list.map((mIdx) => ({
+    return Array.from({ length: 12 }, (_, mIdx) => ({
       name: monthNameDE(mIdx),
       monthIndex: mIdx,
       year,
       daysInMonth: daysInMonth(year, mIdx),
       firstDayIndex: firstDayIndex(year, mIdx),
-      isoPrefix: `${year}-${pad2(mIdx + 1)}-`,
     }));
   }, [year]);
 
+  // ✅ load from backend
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const data = await api.fetchAppointments();
-        setAppointments(data);
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          setAppointments([]);
+          return;
+        }
+
+        const res = await fetch(`${BACKEND_URL}/appointments/therapist`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.log("appointments/therapist error:", data);
+          setAppointments([]);
+          return;
+        }
+
+        const items = toUiAppointments(data.items ?? []);
+        setAppointments(items);
+      } catch (e) {
+        console.log("TherapistAppointments load error:", e);
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const apptDatesSet = useMemo(() => new Set(appointments.map((a) => a.date)), [appointments]);
+  // ✅ فقط BOOKED رح يعمل دائرة حمرا
+  const bookedDatesSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of appointments) {
+      if (a.status === "BOOKED") set.add(a.date);
+    }
+    return set;
+  }, [appointments]);
 
-  const go = (path: string) => {
-    setMenuOpen(false);
-    router.replace(path as any);
-  };
+  // تفاصيل اليوم المختار
+  const dayAppointments = useMemo(() => {
+    if (!selectedDate) return [];
+    return appointments
+      .filter((a) => a.date === selectedDate)
+      .sort((a, b) => a.time.localeCompare(b.time));
+  }, [appointments, selectedDate]);
+
+  const bookedOnly = useMemo(() => dayAppointments.filter((a) => a.status === "BOOKED"), [dayAppointments]);
+  const others = useMemo(() => dayAppointments.filter((a) => a.status !== "BOOKED"), [dayAppointments]);
 
   const onDayPress = (isoDate: string) => {
     setSelectedDate(isoDate);
     setDetailsOpen(true);
   };
 
-  const appointmentsForSelectedDay = useMemo(() => {
-    if (!selectedDate) return [];
-    return appointments.filter((a) => a.date === selectedDate).sort(sortByTime);
-  }, [appointments, selectedDate]);
-
-  const openAdd = (date: string) => {
-    setEditMode("add");
-    setDraft({ date, time: "10:00", patientId: "", note: "" });
-    setEditorOpen(true);
-  };
-
-  const openEdit = (appt: Appointment) => {
-    setEditMode("edit");
-    setDraft({
-      id: appt.id,
-      date: appt.date,
-      time: appt.time,
-      patientId: appt.patientId,
-      note: appt.note ?? "",
-    });
-    setEditorOpen(true);
-  };
-
-  const saveDraft = async () => {
-    if (!draft.patientId.trim()) return;
-    if (!draft.time.trim()) return;
-
-    if (editMode === "add") {
-      const created = await api.createAppointment({
-        date: draft.date,
-        time: draft.time,
-        patientId: draft.patientId.trim(),
-        note: draft.note.trim() || undefined,
-      });
-      setAppointments((prev) => [...prev, created]);
-    } else {
-      if (!draft.id) return;
-      const updated = await api.updateAppointment(draft.id, {
-        date: draft.date,
-        time: draft.time,
-        patientId: draft.patientId.trim(),
-        note: draft.note.trim() || undefined,
-      });
-      setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    }
-
-    setEditorOpen(false);
-  };
-
-  const deleteAppt = async (id: string) => {
-    await api.deleteAppointment(id);
-    setAppointments((prev) => prev.filter((a) => a.id !== id));
-  };
-
+  // لو جاي من therapist-home ببارام date
   useEffect(() => {
-    if (params.date) {
+    if (params?.date && typeof params.date === "string") {
       setSelectedDate(params.date);
       setDetailsOpen(true);
     }
-  }, [params.date]);
+  }, [params?.date]);
+
+  const go = (path: string) => {
+    setMenuOpen(false);
+    router.replace(path as any);
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.topRow}>
-          <Pressable
-            onPress={() => router.replace("/therapist-home")}
-            hitSlop={10}
-            style={styles.backBtn}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </Pressable>
+    <View style={styles.screen}>
+      {/* Header */}
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#111" />
+        </Pressable>
+        <Text style={styles.pageTitle}>Termine</Text>
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.pageTitle}>Termine</Text>
-            <View style={styles.topDivider} />
-          </View>
-
-          <Text style={styles.year}>{year}</Text>
-
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10} style={styles.menuBtn}>
-            <Ionicons name="menu" size={26} color="#333" />
+        <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+          <Text style={styles.yearText}>{year}</Text>
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+            <Ionicons name="menu" size={22} color="#111" />
           </Pressable>
         </View>
-
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <Text style={styles.loadingText}>Lade Termine...</Text>
-          </View>
-        ) : (
-          <>
-            {months.map((m) => (
-              <View key={m.name}>
-                <MonthCalendar
-                  month={m}
-                  apptDatesSet={apptDatesSet}
-                  onDayPress={onDayPress}
-                  todayISO={todayISO}
-                />
-                <View style={styles.sectionDivider} />
-              </View>
-            ))}
-          </>
-        )}
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
-
-      {/* Bottom Tabs */}
-      <View style={styles.tabs}>
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-home")}>
-          <Ionicons name="home" size={22} color="#111" />
-          <Text style={styles.tabTextActive}>Startseite</Text>
-        </Pressable>
-
-        <Pressable style={styles.tab} onPress={() => router.push("/therapist-chatlist")}>
-          <Ionicons name="chatbubbles-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Chat</Text>
-        </Pressable>
-
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-patients")}>
-          <Ionicons name="people-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Patienten</Text>
-        </Pressable>
-
-        <Pressable style={styles.tab} onPress={() => router.replace("/therapist-profile")}>
-          <Ionicons name="person-outline" size={22} color="#111" />
-          <Text style={styles.tabText}>Profil</Text>
-        </Pressable>
       </View>
 
-      {/* ===================== DAY DETAILS MODAL ===================== */}
+      {loading ? (
+        <View style={{ padding: 18 }}>
+          <Text style={{ color: "#6B7280" }}>Laden...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+          {months.map((m) => (
+            <MonthCalendar
+              key={`${m.year}-${m.monthIndex}`}
+              month={m}
+              bookedDatesSet={bookedDatesSet}
+              onDayPress={onDayPress}
+              todayISO={todayISO}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      {/* تفاصيل اليوم */}
       <Modal transparent visible={detailsOpen} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setDetailsOpen(false)}>
-          <Pressable style={styles.detailsSheet} onPress={() => {}}>
-            <View style={styles.detailsHeader}>
-              <Text style={styles.detailsTitle}>
-                {selectedDate ? `Termine: ${selectedDate}` : "Termine"}
-              </Text>
-
-              <Pressable onPress={() => selectedDate && openAdd(selectedDate)} hitSlop={10}>
-                <Ionicons name="add-circle" size={26} color="#111" />
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>{selectedDate ?? "Details"}</Text>
+              <Pressable onPress={() => setDetailsOpen(false)} hitSlop={10}>
+                <Ionicons name="close" size={22} color="#111" />
               </Pressable>
             </View>
 
-            <View style={styles.menuDivider} />
-
-            {selectedDate && appointmentsForSelectedDay.length === 0 ? (
-              <Text style={styles.detailsEmpty}>Keine Termine an diesem Tag.</Text>
+            {/* ✅ Booked only */}
+            <Text style={styles.blockTitle}>Gebuchte Termine</Text>
+            {bookedOnly.length === 0 ? (
+              <Text style={styles.muted}>Keine gebuchten Termine an diesem Tag.</Text>
             ) : (
-              appointmentsForSelectedDay.map((a) => {
-                const patientName = getPatientById(a.patientId)?.name ?? "Unbekannter Patient";
-                return (
-                  <View key={a.id} style={styles.apptRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.apptTime}>{a.time}</Text>
-                      <Text style={styles.apptPatient}>{patientName}</Text>
-                      {!!a.note && <Text style={styles.apptNote}>{a.note}</Text>}
-                    </View>
-
-                    <View style={styles.apptActions}>
-                      <Pressable onPress={() => openEdit(a)} hitSlop={10}>
-                        <Ionicons name="pencil" size={18} color="#111" />
-                      </Pressable>
-
-                      <Pressable onPress={() => deleteAppt(a.id)} hitSlop={10}>
-                        <Ionicons name="trash" size={18} color="#B00000" />
-                      </Pressable>
-                    </View>
+              bookedOnly.map((a) => (
+                <View key={a.id} style={styles.itemRow}>
+                  <Text style={styles.itemTime}>{a.time}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemMain}>{a.patientName || "Patient"}</Text>
+                    {a.note ? <Text style={styles.itemSub}>{a.note}</Text> : null}
                   </View>
-                );
-              })
+                  <Text style={[styles.badgeStatus, { backgroundColor: "#DC2626" }]}>
+                    BOOKED
+                  </Text>
+                </View>
+              ))
             )}
 
-            <Pressable style={styles.addBtn} onPress={() => selectedDate && openAdd(selectedDate)}>
-              <Text style={styles.addText}>+ Termin hinzufügen</Text>
+            {/* باقي الحالات (slots/available/cancelled) */}
+            <Text style={[styles.blockTitle, { marginTop: 14 }]}>Andere</Text>
+            {others.length === 0 ? (
+              <Text style={styles.muted}>Keine weiteren Einträge.</Text>
+            ) : (
+              others.map((a) => (
+                <View key={a.id} style={styles.itemRow}>
+                  <Text style={styles.itemTime}>{a.time}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemMain}>
+                      {a.status === "CANCELLED" ? "Abgesagt" : "Slot"}
+                    </Text>
+                    {a.note ? <Text style={styles.itemSub}>{a.note}</Text> : null}
+                  </View>
+                  <Text style={[styles.badgeStatus, { backgroundColor: "#9CA3AF" }]}>
+                    {a.status || "—"}
+                  </Text>
+                </View>
+              ))
+            )}
+
+            {/* مثال: زر إضافة لاحقاً */}
+            <Pressable
+              style={styles.addBtn}
+              onPress={() => {
+                setDraftNote("");
+                setEditorOpen(true);
+              }}
+            >
+              <Ionicons name="add" size={18} color="#111" />
+              <Text style={styles.addBtnText}>Termin-Slot hinzufügen (optional)</Text>
             </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
 
-      {/* ===================== ADD / EDIT MODAL ===================== */}
+      {/* محرر بسيط (اختياري) */}
       <Modal transparent visible={editorOpen} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setEditorOpen(false)}>
-          <Pressable style={styles.editorSheet} onPress={() => {}}>
-            <Text style={styles.editorTitle}>
-              {editMode === "add" ? "Termin hinzufügen" : "Termin bearbeiten"}
-            </Text>
-
-            <View style={styles.menuDivider} />
-
-            <View style={styles.formField}>
-              <Text style={styles.formLabel}>Datum (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.formInput}
-                value={draft.date}
-                onChangeText={(t) => setDraft((p) => ({ ...p, date: t }))}
-                placeholder="2026-01-04"
-              />
-            </View>
-
-            <View style={styles.formField}>
-              <Text style={styles.formLabel}>Uhrzeit (HH:MM)</Text>
-              <TextInput
-                style={styles.formInput}
-                value={draft.time}
-                onChangeText={(t) => setDraft((p) => ({ ...p, time: t }))}
-                placeholder="12:30"
-              />
-            </View>
-
-            {/* Patient selection */}
-            <View style={styles.formField}>
-              <Text style={styles.formLabel}>Patient</Text>
-
-              <View style={{ gap: 8 }}>
-                {PATIENTS.map((p) => {
-                  const selected = draft.patientId === p.id;
-                  return (
-                    <Pressable
-                      key={p.id}
-                      onPress={() => setDraft((prev) => ({ ...prev, patientId: p.id }))}
-                      style={[
-                        styles.formInput,
-                        {
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        },
-                        selected ? { borderWidth: 2, borderColor: "#111" } : null,
-                      ]}
-                    >
-                      <Text style={{ fontWeight: "800", color: "#111" }}>{p.name}</Text>
-                      {selected ? (
-                        <Ionicons name="checkmark-circle" size={18} color="#111" />
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.formField}>
-              <Text style={styles.formLabel}>Notiz</Text>
-              <TextInput
-                style={[styles.formInput, { height: 90, textAlignVertical: "top" }]}
-                value={draft.note}
-                onChangeText={(t) => setDraft((p) => ({ ...p, note: t }))}
-                placeholder="Optional..."
-                multiline
-              />
-            </View>
-
-            <View style={styles.editorButtonsRow}>
-              <Pressable style={styles.cancelBtn} onPress={() => setEditorOpen(false)}>
-                <Text style={styles.cancelText}>Abbrechen</Text>
-              </Pressable>
-
-              <Pressable style={styles.saveBtn} onPress={saveDraft}>
-                <Text style={styles.saveText}>Speichern</Text>
-              </Pressable>
-            </View>
+          <Pressable style={styles.editor} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>Notiz</Text>
+            <TextInput
+              value={draftNote}
+              onChangeText={setDraftNote}
+              placeholder="Notiz..."
+              style={styles.input}
+            />
+            <Pressable style={styles.saveBtn} onPress={() => setEditorOpen(false)}>
+              <Text style={styles.saveBtnText}>Schließen</Text>
+            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
 
-      {/* ===================== MENU MODAL ===================== */}
+      {/* Menu */}
       <Modal transparent visible={menuOpen} animationType="fade">
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
           <Pressable style={styles.drawer} onPress={() => {}}>
-            <Text style={styles.menuTitle}>Menü:</Text>
-            <View style={styles.menuDivider} />
+            <Text style={styles.menuTitle}>Menü</Text>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-home")}>
               <Text style={styles.menuText}>Home</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
-              <Text style={styles.menuText}>Meine Patienten</Text>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => go("/therapist-appointments")}>
               <Text style={styles.menuText}>Termine</Text>
             </Pressable>
 
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-chatlist")}>
-              <Text style={styles.menuText}>Chat</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => go("/therapist-profile")}>
-              <Text style={styles.menuText}>Mein Profil</Text>
+            <Pressable style={styles.menuItem} onPress={() => go("/therapist-patients")}>
+              <Text style={styles.menuText}>Patienten</Text>
             </Pressable>
 
             <View style={styles.menuDivider} />
 
-            <Pressable
-              style={styles.logoutBtn}
-              onPress={() => {
-                setMenuOpen(false);
-                router.replace("/login-therapeut");
-              }}
-            >
-              <Text style={styles.logoutText}>abmelden</Text>
+            <Pressable style={styles.menuItem} onPress={() => router.replace("/login-therapeut")}>
+              <Text style={[styles.menuText, { color: "#B91C1C", fontWeight: "800" }]}>
+                abmelden
+              </Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -538,224 +425,105 @@ export default function TherapistAppointments() {
 
 /** ===================== STYLES ===================== */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  scroll: { paddingTop: 50, paddingHorizontal: 22 },
+  screen: { flex: 1, backgroundColor: "#fff" },
 
-  topRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  backBtn: { padding: 6 },
-  pageTitle: { fontSize: 18, fontWeight: "700", color: "#111" },
-  year: { fontSize: 18, fontWeight: "800", color: "#111" },
-  menuBtn: { padding: 6 },
-
-  topDivider: {
-    height: 1,
-    backgroundColor: "#CFCFCF",
-    marginTop: 10,
-    marginRight: 30,
-  },
-
-  loadingBox: {
-    marginTop: 18,
-    backgroundColor: "#E5E5E5",
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  loadingText: { fontWeight: "700", color: "#111" },
-
-  sectionDivider: {
-    height: 1,
-    backgroundColor: "#CFCFCF",
-    marginVertical: 16,
-  },
-
-  monthBlock: { alignItems: "center" },
-
-  monthTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#777",
-    letterSpacing: 6,
-    marginBottom: 12,
-  },
-
-  weekRow: {
-    width: "100%",
+  topBar: {
+    paddingTop: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingHorizontal: 6,
-  },
-
-  weekday: { width: 24, textAlign: "center", fontWeight: "700", color: "#333" },
-  sunday: { color: "#c40000" },
-
-  grid: { width: "100%", flexDirection: "row", flexWrap: "wrap" },
-
-  dayCell: {
-    width: "14.2857%",
-    height: 36,
-    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10,
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
+  backBtn: { padding: 6 },
+  pageTitle: { fontSize: 18, fontWeight: "800", color: "#111" },
+  yearText: { fontSize: 16, fontWeight: "800", color: "#111" },
+
+  monthBlock: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  monthTitle: { textAlign: "center", fontSize: 12, letterSpacing: 6, color: "#6B7280", marginBottom: 8 },
+
+  weekRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  weekday: { width: "14.28%", textAlign: "center", color: "#111", fontWeight: "600" },
+  sunday: { color: "#B91C1C" },
+
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  dayCell: { width: "14.28%", alignItems: "center", paddingVertical: 8 },
 
   circleBase: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
+    justifyContent: "center",
   },
-
-  circleFilled: { backgroundColor: "#c40000" },
-
-  circleToday: {
-    borderWidth: 2,
-    borderColor: "#111",
-    opacity: 0.6,
-  },
+  circleFilled: { backgroundColor: "#B91C1C" }, // ✅ الأحمر
+  circleToday: { borderWidth: 1, borderColor: "#9CA3AF" },
 
   dayText: { color: "#111", fontWeight: "700" },
-  dayTextFilled: { color: "#fff", fontWeight: "800" },
-
-  tabs: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#BDBDBD",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
-
-  tab: { alignItems: "center", width: 78, gap: 4 },
-  tabText: { fontSize: 12, fontWeight: "600", color: "#111", opacity: 0.85 },
-  tabTextActive: { fontSize: 12, fontWeight: "800", color: "#111" },
+  dayTextFilled: { color: "#fff", fontWeight: "900" },
 
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-  },
-
-  drawer: {
-    width: "78%",
-    height: "100%",
-    backgroundColor: "#BDBDBD",
-    paddingTop: 70,
-    paddingHorizontal: 26,
-  },
-
-  menuTitle: { fontSize: 22, fontWeight: "800", color: "#111", marginBottom: 10 },
-
-  menuDivider: {
-    height: 1,
-    backgroundColor: "#111",
-    opacity: 0.4,
-    marginVertical: 10,
-  },
-
-  menuItem: { paddingVertical: 8 },
-  menuText: { fontSize: 16, color: "#111", fontWeight: "600" },
-
-  logoutBtn: { paddingVertical: 10 },
-  logoutText: { color: "#B00000", fontSize: 16, fontWeight: "700" },
-
-  detailsSheet: {
-    width: "92%",
-    marginTop: 90,
-    marginRight: 12,
-    backgroundColor: "#BDBDBD",
-    borderRadius: 16,
+    justifyContent: "center",
     padding: 16,
   },
 
-  detailsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  sheet: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 14,
   },
+  sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  sheetTitle: { fontSize: 16, fontWeight: "900", color: "#111" },
 
-  detailsTitle: { fontSize: 18, fontWeight: "800", color: "#111" },
-  detailsEmpty: { fontSize: 14, fontWeight: "700", color: "#111", marginTop: 12 },
+  blockTitle: { fontSize: 13, fontWeight: "900", color: "#111", marginTop: 6, marginBottom: 8 },
+  muted: { color: "#6B7280", marginBottom: 6 },
 
-  apptRow: {
-    backgroundColor: "#E0E0E0",
-    borderRadius: 14,
-    padding: 12,
-    marginTop: 10,
+  itemRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
-
-  apptTime: { fontSize: 16, fontWeight: "800", color: "#111" },
-  apptPatient: { fontSize: 14, fontWeight: "700", color: "#111", marginTop: 2 },
-  apptNote: { fontSize: 12, fontWeight: "600", color: "#333", marginTop: 4 },
-
-  apptActions: { flexDirection: "row", gap: 14, alignItems: "center" },
+  itemTime: { width: 52, fontWeight: "900", color: "#111" },
+  itemMain: { fontWeight: "900", color: "#111" },
+  itemSub: { color: "#6B7280", marginTop: 2, fontSize: 12 },
+  badgeStatus: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 11,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
 
   addBtn: {
     marginTop: 12,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  addText: { fontSize: 14, fontWeight: "800", color: "#111" },
-
-  editorSheet: {
-    width: "92%",
-    marginTop: 90,
-    marginRight: 12,
-    backgroundColor: "#BDBDBD",
-    borderRadius: 16,
-    padding: 16,
-  },
-
-  editorTitle: { fontSize: 18, fontWeight: "800", color: "#111" },
-
-  formField: { marginTop: 10 },
-
-  formLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111",
-    opacity: 0.85,
-    marginBottom: 6,
-  },
-
-  formInput: {
-    backgroundColor: "#EDEDED",
+    backgroundColor: "#F3F4F6",
     borderRadius: 12,
-    paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  editorButtonsRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
-  cancelText: { fontSize: 14, fontWeight: "800", color: "#111" },
+  addBtnText: { fontWeight: "800", color: "#111" },
 
-  saveBtn: {
-    flex: 1,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveText: { fontSize: 14, fontWeight: "900", color: "#111" },
+  editor: { backgroundColor: "#fff", borderRadius: 18, padding: 14 },
+  input: { borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 10, marginTop: 10 },
+  saveBtn: { marginTop: 12, backgroundColor: "#111827", padding: 10, borderRadius: 12, alignItems: "center" },
+  saveBtnText: { color: "#fff", fontWeight: "900" },
+
+  drawer: { backgroundColor: "#fff", borderRadius: 18, padding: 14 },
+  menuTitle: { fontSize: 18, fontWeight: "900", marginBottom: 10, color: "#111" },
+  menuDivider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 10 },
+  menuItem: { paddingVertical: 10 },
+  menuText: { fontSize: 16, color: "#111" },
 });
+
