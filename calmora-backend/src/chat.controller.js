@@ -76,9 +76,9 @@ async function createOrOpenConversation(req, res) {
   return res.json({ conversation });
 }
 
-
 async function listConversations(req, res) {
   const currentUser = req.user;
+
   const conversations = await prisma.conversation.findMany({
     where: {
       OR: [{ patientId: currentUser.id }, { therapistId: currentUser.id }],
@@ -94,6 +94,26 @@ async function listConversations(req, res) {
     orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
   });
 
+  // ✅ حساب unreadCount لكل محادثة (رسائل الطرف الآخر فقط و readAt = null)
+  const conversationIds = conversations.map((c) => c.id);
+
+  const unreadGroups =
+    conversationIds.length === 0
+      ? []
+      : await prisma.message.groupBy({
+          by: ["conversationId"],
+          where: {
+            conversationId: { in: conversationIds },
+            readAt: null,
+            NOT: { senderId: currentUser.id },
+          },
+          _count: { _all: true },
+        });
+
+  const unreadByConversationId = new Map(
+    unreadGroups.map((g) => [g.conversationId, g._count._all])
+  );
+
   const payload = conversations.map((conversation) => ({
     id: conversation.id,
     patientId: conversation.patientId,
@@ -104,6 +124,9 @@ async function listConversations(req, res) {
     patient: serializeUser(conversation.patient),
     therapist: serializeUser(conversation.therapist),
     lastMessage: conversation.messages[0] || null,
+
+    // ✅ الجديد
+    unreadCount: unreadByConversationId.get(conversation.id) || 0,
   }));
 
   return res.json({ conversations: payload });
@@ -212,10 +235,43 @@ async function markMessageRead(req, res) {
   return res.json({ message: updated });
 }
 
+// ✅ جديد: قراءة كل رسائل المحادثة دفعة واحدة
+async function markConversationRead(req, res) {
+  const currentUser = req.user;
+  const conversationId = Number(req.params.id);
+
+  if (!Number.isInteger(conversationId)) {
+    return res.status(400).json({ error: "Invalid conversation id" });
+  }
+
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+  });
+
+  if (!conversation || !isParticipant(conversation, currentUser.id)) {
+    return res.status(404).json({ error: "Conversation not found" });
+  }
+
+  const result = await prisma.message.updateMany({
+    where: {
+      conversationId,
+      readAt: null,
+      NOT: { senderId: currentUser.id },
+    },
+    data: { readAt: new Date() },
+  });
+
+  return res.json({ updated: result.count });
+}
+
 module.exports = {
   createOrOpenConversation,
   listConversations,
   listMessages,
   sendMessage,
   markMessageRead,
+
+  // ✅ الجديد
+  markConversationRead,
 };
+

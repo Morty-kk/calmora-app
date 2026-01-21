@@ -15,13 +15,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../../context/AuthContext";
 import { useNotify } from "../../context/NotifyContext";
 import {
   ChatMessage,
   getConversationMessages,
-  markMessageRead,
+  markConversationRead,
   sendMessage,
 } from "../../services/api";
 
@@ -37,11 +38,11 @@ function formatTime(value: string) {
 export default function TherapistChatScreen() {
   const { token, user } = useAuth();
   const { setUnreadChats } = useNotify();
+  const insets = useSafeAreaInsets();
 
-  // ✅ Fix TypeScript: user any + robust id
+  // ✅ Robust id
   const u: any = user;
-  const myId =
-    u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
+  const myId = u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
 
   // ✅ reset badge لما الطبيب يفتح الشات
   useEffect(() => {
@@ -131,18 +132,27 @@ export default function TherapistChatScreen() {
     return () => clearInterval(interval);
   }, [token, invalidConversation, loadMessages]);
 
-  /** ================= MARK AS READ ================= */
+  /** ================= MARK CONVERSATION AS READ (ONE REQUEST) ================= */
   useEffect(() => {
-    if (!token || !myId) return;
+    if (!token || !myId || invalidConversation) return;
+    if (messages.length === 0) return;
 
-    const unread = messages.filter(
+    const hasUnreadFromOther = messages.some(
       (m) => !m.readAt && m.senderId !== Number(myId)
     );
+    if (!hasUnreadFromOther) return;
 
-    unread.forEach((m) => {
-      markMessageRead(token, m.id).catch(() => null);
-    });
-  }, [messages, token, myId]);
+    // Optimistic UI
+    const nowIso = new Date().toISOString();
+    setMessages((prev) =>
+      prev.map((m) =>
+        !m.readAt && m.senderId !== Number(myId) ? { ...m, readAt: nowIso } : m
+      )
+    );
+
+    // One backend call
+    markConversationRead(token, conversationIdNumber).catch(() => null);
+  }, [messages, token, myId, conversationIdNumber, invalidConversation]);
 
   /** ================= SEND MESSAGE ================= */
   const handleSend = async () => {
@@ -184,11 +194,15 @@ export default function TherapistChatScreen() {
     }
   };
 
+  // ✅ مساحة تحت للـ FlatList حتى ما ينغطّى بالـ input
+  const bottomBarHeight = 56;
+  const listBottomPadding = bottomBarHeight + Math.max(insets.bottom, 10) + 12;
+
   /** ================= UI ================= */
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 14) }]}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
         </Pressable>
@@ -211,7 +225,8 @@ export default function TherapistChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={80}
+        // ✅ offset صغير لأن الـ input مثبت absolute
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         {/* CHAT */}
         <ImageBackground
@@ -230,7 +245,12 @@ export default function TherapistChatScreen() {
               keyExtractor={(item) => item.id.toString()}
               inverted
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.messages}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[
+                styles.messages,
+                { paddingBottom: listBottomPadding },
+              ]}
               renderItem={({ item }) => {
                 const isMe = Number(item.senderId) === Number(myId);
                 return (
@@ -243,8 +263,10 @@ export default function TherapistChatScreen() {
                     <Text style={isMe ? styles.rightText : styles.leftText}>
                       {item.content}
                     </Text>
+
                     <Text style={isMe ? styles.timeRight : styles.timeLeft}>
                       {formatTime(item.createdAt)}
+                      {isMe ? (item.readAt ? " ✓✓" : " ✓") : ""}
                     </Text>
                   </View>
                 );
@@ -257,8 +279,8 @@ export default function TherapistChatScreen() {
           )}
         </ImageBackground>
 
-        {/* INPUT */}
-        <View style={styles.inputBar}>
+        {/* ✅ Input ثابت تحت (حل iPhone النهائي) */}
+        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
           <TextInput
             style={styles.input}
             placeholder="Nachricht schreiben..."
@@ -283,7 +305,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
     gap: 10,
     backgroundColor: "#E5E7EB",
   },
@@ -300,10 +323,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 10,
   },
-  rightBubble: {
-    backgroundColor: "#6B7280",
-    alignSelf: "flex-end",
-  },
+  rightBubble: { backgroundColor: "#6B7280", alignSelf: "flex-end" },
   leftBubble: {
     backgroundColor: "#F3F4F6",
     alignSelf: "flex-start",
@@ -315,18 +335,23 @@ const styles = StyleSheet.create({
   timeRight: { fontSize: 10, color: "white", marginTop: 4 },
   timeLeft: { fontSize: 10, color: "#6B7280", marginTop: 4 },
 
-  inputBar: {
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#E5E7EB",
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
   },
   input: {
     flex: 1,
     backgroundColor: "white",
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     marginRight: 10,
     color: "#111827",
   },
@@ -334,6 +359,4 @@ const styles = StyleSheet.create({
   centered: { marginTop: 20, alignItems: "center" },
   errorText: { textAlign: "center", marginTop: 20, color: "#B00020" },
 });
-
-
 

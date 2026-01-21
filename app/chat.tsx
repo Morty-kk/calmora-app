@@ -21,7 +21,7 @@ import { useNotify } from "../context/NotifyContext";
 import {
   ChatMessage,
   getConversationMessages,
-  markMessageRead,
+  markConversationRead,
   sendMessage,
 } from "../services/api";
 
@@ -38,12 +38,9 @@ export default function ChatScreen() {
   const { token, user } = useAuth();
   const { setUnreadChats } = useNotify();
 
-  // ✅ حل TypeScript: نخلي user any ونطلع id بأي اسم موجود
   const u: any = user;
-  const myId =
-    u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
+  const myId = u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
 
-  // ✅ reset badge أول ما تفتح صفحة الشات
   useEffect(() => {
     setUnreadChats(0);
   }, [setUnreadChats]);
@@ -134,18 +131,26 @@ export default function ChatScreen() {
     return () => clearInterval(interval);
   }, [loadMessages, token, invalidConversation]);
 
-  // ✅ mark as read بدون user?.id
+  // ✅ mark conversation as read once (optimistic UI)
   useEffect(() => {
-    if (!token || !myId) return;
+    if (!token || !myId || invalidConversation) return;
+    if (messages.length === 0) return;
 
-    const unread = messages.filter(
-      (message) => !message.readAt && message.senderId !== Number(myId)
+    const unreadFromOther = messages.some(
+      (m) => !m.readAt && m.senderId !== Number(myId)
+    );
+    if (!unreadFromOther) return;
+
+    const nowIso = new Date().toISOString();
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (!m.readAt && m.senderId !== Number(myId)) return { ...m, readAt: nowIso };
+        return m;
+      })
     );
 
-    unread.forEach((message) => {
-      markMessageRead(token, message.id).catch(() => null);
-    });
-  }, [messages, token, myId]);
+    markConversationRead(token, conversationIdNumber).catch(() => null);
+  }, [messages, token, myId, conversationIdNumber, invalidConversation]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -173,14 +178,12 @@ export default function ChatScreen() {
       });
 
       setMessages((prev) =>
-        prev.map((message) => (message.id === tempId ? data.message : message))
+        prev.map((m) => (m.id === tempId ? data.message : m))
       );
     } catch (err) {
-      setMessages((prev) => prev.filter((message) => message.id !== tempId));
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError(
-        err instanceof Error
-          ? err.message
-          : "Nachricht konnte nicht gesendet werden."
+        err instanceof Error ? err.message : "Nachricht konnte nicht gesendet werden."
       );
     } finally {
       setSending(false);
@@ -201,20 +204,14 @@ export default function ChatScreen() {
         />
         <Text style={styles.name}>{normalizedPartnerEmail || "Chat"}</Text>
 
-        <Ionicons
-          name="call"
-          size={22}
-          color="black"
-          style={{ marginLeft: "auto" }}
-        />
+        <Ionicons name="call" size={22} color="black" style={{ marginLeft: "auto" }} />
       </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={80}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-        {/* CHAT MIT HINTERGRUND */}
         <ImageBackground
           source={require("../assets/bg.png")}
           style={styles.chatArea}
@@ -245,16 +242,17 @@ export default function ChatScreen() {
                       {item.content}
                     </Text>
                     <Text style={isUser ? styles.timeRight : styles.timeLeft}>
-  {formatTime(item.createdAt)}
-  {isUser ? (item.readAt ? " ✓✓" : " ✓") : ""}
-</Text>
-
+                      {formatTime(item.createdAt)}
+                      {isUser ? (item.readAt ? " ✓✓" : " ✓") : ""}
+                    </Text>
                   </View>
                 );
               }}
               inverted
               contentContainerStyle={styles.messagesContainer}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
               onEndReached={() => {
                 if (nextCursor) {
                   loadMessages({ cursor: nextCursor, append: true });
@@ -265,20 +263,22 @@ export default function ChatScreen() {
           )}
         </ImageBackground>
 
-        {/* EINGABE-LEISTE */}
-        <View style={styles.inputBar}>
-          <Ionicons name="add" size={26} />
-          <TextInput
-            placeholder="schreibe eine Nachricht..."
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-          />
-          <TouchableOpacity onPress={handleSend}>
-            <Ionicons name="send" size={22} />
-          </TouchableOpacity>
+        {/* ✅ SAFE AREA WRAPPER */}
+        <View style={styles.inputWrapper}>
+          <View style={styles.inputBar}>
+            <Ionicons name="add" size={26} />
+            <TextInput
+              placeholder="schreibe eine Nachricht..."
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+            />
+            <TouchableOpacity onPress={handleSend}>
+              <Ionicons name="send" size={22} />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -286,65 +286,31 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FADDC8",
-  },
+  container: { flex: 1, backgroundColor: "#FADDC8" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
     backgroundColor: "#FADDC8",
   },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    marginHorizontal: 10,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  chatArea: {
-    flex: 1,
-  },
-  messagesContainer: {
-    padding: 15,
-    paddingBottom: 24,
-  },
-  bubble: {
-    padding: 12,
-    borderRadius: 18,
-    marginBottom: 10,
-    maxWidth: "80%",
-  },
-  rightBubble: {
-    backgroundColor: "#B28AD6",
-    alignSelf: "flex-end",
-  },
-  leftBubble: {
-    backgroundColor: "#FFD9B3",
-    alignSelf: "flex-start",
-  },
-  rightText: {
-    color: "white",
-    fontSize: 14,
-  },
-  leftText: {
-    color: "#4A4A4A",
-    fontSize: 14,
-  },
-  timeRight: {
-    fontSize: 10,
-    color: "white",
-    textAlign: "right",
-    marginTop: 4,
-  },
-  timeLeft: {
-    fontSize: 10,
-    color: "#555",
-    marginTop: 4,
+  avatar: { width: 34, height: 34, borderRadius: 17, marginHorizontal: 10 },
+  name: { fontSize: 16, fontWeight: "600" },
+
+  chatArea: { flex: 1 },
+  messagesContainer: { padding: 15, paddingBottom: 24 },
+
+  bubble: { padding: 12, borderRadius: 18, marginBottom: 10, maxWidth: "80%" },
+  rightBubble: { backgroundColor: "#B28AD6", alignSelf: "flex-end" },
+  leftBubble: { backgroundColor: "#FFD9B3", alignSelf: "flex-start" },
+  rightText: { color: "white", fontSize: 14 },
+  leftText: { color: "#4A4A4A", fontSize: 14 },
+  timeRight: { fontSize: 10, color: "white", textAlign: "right", marginTop: 4 },
+  timeLeft: { fontSize: 10, color: "#555", marginTop: 4 },
+
+  // ✅ SAFE AREA FIX
+  inputWrapper: {
+    backgroundColor: "#FADDC8",
+    paddingBottom: Platform.OS === "ios" ? 20 : 0,
   },
   inputBar: {
     flexDirection: "row",
@@ -361,19 +327,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 14,
   },
-  centered: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  emptyText: {
-    marginTop: 20,
-    color: "#7C6FB3",
-    textAlign: "center",
-  },
-  errorText: {
-    marginTop: 20,
-    color: "#B00020",
-    textAlign: "center",
-  },
+
+  centered: { marginTop: 20, alignItems: "center" },
+  emptyText: { marginTop: 20, color: "#7C6FB3", textAlign: "center" },
+  errorText: { marginTop: 20, color: "#B00020", textAlign: "center" },
 });
+
+
 

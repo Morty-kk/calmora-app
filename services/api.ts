@@ -92,6 +92,9 @@ export type Conversation = {
   patient: ChatUser;
   therapist: ChatUser;
   lastMessage: ChatMessage | null;
+
+  // ✅ جديد: عدد الرسائل غير المقروءة (بيجي من backend)
+  unreadCount?: number;
 };
 
 /** ===================== CHAT API ===================== **/
@@ -151,4 +154,13 @@ export function markMessageRead(token: string, messageId: number) {
     token,
   });
 }
+
+// ✅ جديد: قراءة كل رسائل المحادثة دفعة وحدة (أفضل من markMessageRead لكل رسالة)
+export function markConversationRead(token: string, conversationId: number) {
+  return apiFetch<{ updated: number }>(`/chat/conversations/${conversationId}/read`, {
+    method: "PATCH",
+    token,
+  });
+}
+
 
