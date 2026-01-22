@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
 import {
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function MeditationIntro() {
@@ -21,7 +20,7 @@ export default function MeditationIntro() {
         {/* Links: Back-Button + Titel/Untertitel */}
         <View style={styles.headerLeft}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.push("/menu")}
             style={styles.backButton}
             activeOpacity={0.7}
           >

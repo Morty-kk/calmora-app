@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const TAGS = ["Alle", "Alltag", "Therapie", "Abend"] as const;
@@ -19,28 +20,32 @@ const COURSES = [
     title: "Sanfte Atemreise",
     desc: "Leichter Einstieg in deine Meditation – ideal für den Morgen.",
     tag: "Alltag" as Tag,
-    length: "8 Min",
+    length: "10 Min",
+    youtubeUrl: "https://www.youtube.com/watch?v=O-6f5wQXSu8",
   },
   {
     id: "clear-head",
     title: "Klarer Kopf x 3",
     desc: "Drei kurze Sequenzen, um Grübelgedanken loszulassen.",
     tag: "Therapie" as Tag,
-    length: "12 Min",
+    length: "10 Min",
+    youtubeUrl: "https://www.youtube.com/watch?v=ZToicYcHIOU",
   },
   {
     id: "evening-wave",
     title: "Evening Balance",
     desc: "Sanfte Entspannung für den Abend, bevor du schlafen gehst.",
     tag: "Abend" as Tag,
-    length: "10 Min",
+    length: "3 Min",
+    youtubeUrl: "https://www.youtube.com/watch?v=aNXKjGFUlMs",
   },
   {
     id: "inner-balance",
     title: "Innere Balance",
     desc: "Finde Ruhe in dir und komme in dein Gleichgewicht.",
     tag: "Alltag" as Tag,
-    length: "15 Min",
+    length: "6 Min",
+    youtubeUrl: "https://www.youtube.com/watch?v=ssss7V1_eyA",
   },
 ];
 
@@ -60,7 +65,7 @@ export default function MeditationCourses() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push("/meditation")}>
           <Ionicons name="chevron-back" size={26} color="#111827" />
         </TouchableOpacity>
 
@@ -101,12 +106,7 @@ export default function MeditationCourses() {
             key={course.id}
             style={styles.courseCard}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: "/meditation-player/index",
-                params: { id: course.id, title: course.title },
-              })
-            }
+            onPress={() => Linking.openURL(course.youtubeUrl)}
           >
             <View style={{ flex: 1 }}>
               <Text style={styles.courseTitle}>{course.title}</Text>
