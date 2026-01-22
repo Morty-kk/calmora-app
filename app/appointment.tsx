@@ -4,14 +4,8 @@ import { useMemo, useState } from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const THERAPISTS = [
-  { id: "1", name: "Herr Bellamy N", email: "therapist@example.com", rating: 4.5, reviews: 135 },
-  { id: "2", name: "Herr Aziz D", email: "aziz@example.com", rating: 4.3, reviews: 130 },
-  { id: "3", name: "Frau Marc M", email: "marc@example.com", rating: 4.3, reviews: 140 },
-  { id: "4", name: "Herr O’Boyle J", email: "oboyle@example.com", rating: 4.5, reviews: 135 },
-  { id: "5", name: "Herr Klimisch", email: "klimisch@example.com", rating: 4.2, reviews: 110 },
-  { id: "6", name: "Herr Martinez", email: "martinez@example.com", rating: 4.4, reviews: 128 },
+  { id: "1", name: "Therapist Demo", email: "therapist@example.com", rating: 4.5, reviews: 135 },
 ];
-
 
 function TherapistCard({
   t, selected, onPress,
@@ -32,6 +26,7 @@ function TherapistCard({
 export default function Appointment() {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return THERAPISTS;
@@ -51,12 +46,23 @@ export default function Appointment() {
 
         <View style={a.searchBox}>
           <Ionicons name="search" size={16} color="#6b7280" />
-          <TextInput placeholder="suchen" value={q} onChangeText={setQ} style={{ flex: 1, paddingVertical: 8 }} autoCapitalize="none" />
+          <TextInput
+            placeholder="suchen"
+            value={q}
+            onChangeText={setQ}
+            style={{ flex: 1, paddingVertical: 8 }}
+            autoCapitalize="none"
+          />
         </View>
 
         <View style={a.grid}>
           {list.map(t => (
-            <TherapistCard key={t.id} t={t} selected={selected === t.id} onPress={() => setSelected(t.id)} />
+            <TherapistCard
+              key={t.id}
+              t={t}
+              selected={selected === t.id}
+              onPress={() => setSelected(t.id)}
+            />
           ))}
         </View>
 

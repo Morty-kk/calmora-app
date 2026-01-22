@@ -18,7 +18,7 @@ type BackendAppointment = {
 export default function TherapistHome() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const therapistName = "Herr Bellamy";
+  const therapistName = "Therapist Demo";
   const { unreadChats, setUnreadChats } = useNotify();
 
   const [appointments, setAppointments] = useState<BackendAppointment[]>([]);

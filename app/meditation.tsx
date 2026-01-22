@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function MeditationIntro() {
@@ -15,63 +15,45 @@ export default function MeditationIntro() {
       style={styles.bg}
       resizeMode="cover"
     >
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Links: Back-Button + Titel/Untertitel */}
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            onPress={() => router.push("/menu")}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color="#111827" />
-          </TouchableOpacity>
+      {/* ⬅️ زر الرجوع إلى الـ Menu */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.replace("/menu")}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="chevron-back" size={24} color="#111827" />
+      </TouchableOpacity>
 
-          <View>
-            <Text style={styles.headerTitle}>Meditation</Text>
-            <Text style={styles.headerSubtitle}>
-              Beruhigt den Geist, stärkt die Aufmerksamkeit und hilft dir,
-              abzuschalten.
-            </Text>
-          </View>
-        </View>
-
-        {/* Rechts: Profil-Icon */}
-        <View style={styles.iconBubble}>
-          <Ionicons name="person-circle-outline" size={32} color="#1F2933" />
-        </View>
-      </View>
-
-      {/* Card „Geführte Meditation“ */}
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>Geführte Meditation</Text>
-          <View style={styles.levelPill}>
-            <Text style={styles.levelText}>Anfänger</Text>
-          </View>
-        </View>
-
-        <Text style={styles.cardDesc}>
-          Starte mit einer sanften, geführten Meditation, um deinen Tag ruhig
-          zu beginnen.
+      <View style={styles.container}>
+        <Text style={styles.pageTitle}>Meditation</Text>
+        <Text style={styles.pageSubtitle}>
+          Wähle einen Kurs und starte direkt.
         </Text>
 
-        {/* Play-Kachel (führt zur Kurs-Ansicht) */}
         <TouchableOpacity
-          style={styles.playTile}
-          activeOpacity={0.85}
+          style={styles.bigCard}
+          activeOpacity={0.9}
           onPress={() => router.push("/meditation-courses")}
         >
-          <View style={styles.playTileRow}>
-            <View>
-              <Text style={styles.playTitle}>Geführte Meditation</Text>
-              <Text style={styles.playSubtitle}>10 Min · ruhige Stimme</Text>
-            </View>
-
-            <View style={styles.playCircle}>
-              <Ionicons name="play" size={26} color="#fff" />
-            </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bigCardTitle}>Geführte Meditation</Text>
+            <Text style={styles.bigCardDesc}>
+              Sanfte Sessions für mehr Ruhe & Fokus – tippe zum Auswählen.
+            </Text>
           </View>
+
+          <View style={styles.playCircle}>
+            <Ionicons name="chevron-forward" size={22} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.smallCard}
+          activeOpacity={0.9}
+          onPress={() => router.push("/meditation-courses")}
+        >
+          <Text style={styles.smallCardTitle}>Alle Kurse ansehen</Text>
+          <Ionicons name="arrow-forward" size={18} color="#111827" />
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -82,119 +64,80 @@ const styles = StyleSheet.create({
   bg: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 70,
   },
 
-  /* HEADER */
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flexShrink: 1,
-  },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 4,
-    backgroundColor: "rgba(255,255,255,0.9)",
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  headerSubtitle: {
-    marginTop: 6,
-    fontSize: 13,
-    color: "#4B5563",
-    maxWidth: 220,
-  },
-  iconBubble: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "rgba(255,255,255,0.8)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  /* CARD */
-  card: {
-    marginTop: 32,
-    padding: 18,
+    position: "absolute",
+    top: 32, // ⬅️ هون التعديل
+    left: 16,
+    width: 40,
+    height: 40,
     borderRadius: 20,
     backgroundColor: "rgba(255,255,255,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
   },
-  cardHeaderRow: {
+
+  container: {
+    gap: 14,
+  },
+
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: "#4B5563",
+    marginTop: -6,
+  },
+
+  bigCard: {
+    marginTop: 14,
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  bigCardTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  bigCardDesc: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 18,
+  },
+
+  playCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#9E86B9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  smallCard: {
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(255,255,255,0.75)",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  cardTitle: {
-    fontSize: 20,
+  smallCardTitle: {
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
   },
-  levelPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "#E5E7EB",
-  },
-  levelText: {
-    fontSize: 12,
-    color: "#374151",
-    fontWeight: "600",
-  },
-  cardDesc: {
-    marginTop: 10,
-    fontSize: 13,
-    color: "#4B5563",
-  },
-
-  /* PLAY TILE */
-  playTile: {
-    marginTop: 16,
-    borderRadius: 18,
-    backgroundColor: "#9E86B9",
-    padding: 18,
-  },
-  playTileRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  playTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#F9FAFB",
-  },
-  playSubtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#E5E7EB",
-  },
-  playCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.45)",
-  },
 });
+

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Modal,
   Pressable,
@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 export default function TherapistProfile() {
   const insets = useSafeAreaInsets();
 
-  const [name, setName] = useState("Bellamy Nour");
+  const [name, setName] = useState("Therapist Demo");
   const [phone, setPhone] = useState("+49 0171 583429");
   const [dob, setDob] = useState("DD MM YYYY");
   const [gender, setGender] = useState("Add Details");

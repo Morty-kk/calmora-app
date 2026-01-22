@@ -40,7 +40,8 @@ async function listMyAppointments(req, res) {
     const items = await prisma.appointment.findMany({
       where: { patientId },
       orderBy: { startsAt: "asc" },
-      include: { therapist: { select: { id: true, email: true } } },
+      // ✅ تعديل هون: ضفنا name
+      include: { therapist: { select: { id: true, email: true, name: true } } },
     });
 
     res.json({ items });
@@ -58,7 +59,8 @@ async function listTherapistAppointments(req, res) {
     const items = await prisma.appointment.findMany({
       where: { therapistId },
       orderBy: { startsAt: "asc" },
-      include: { patient: { select: { id: true, email: true } } },
+      // ✅ تعديل هون: ضفنا name
+      include: { patient: { select: { id: true, email: true, name: true } } },
     });
 
     res.json({ items });
@@ -67,8 +69,6 @@ async function listTherapistAppointments(req, res) {
     res.status(500).json({ error: "Internal server error" });
   }
 }
-
-// ... (خلي دوال createAppointment/listMyAppointments/listTherapistAppointments كما هي)
 
 // ✅ GET /appointments/:id
 async function getAppointmentById(req, res) {
@@ -150,5 +150,3 @@ module.exports = {
   getAppointmentById,
   cancelAppointment,
 };
-
-
