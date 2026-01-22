@@ -1,12 +1,12 @@
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import React from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = DrawerContentComponentProps & {
@@ -37,16 +37,10 @@ const CustomDrawer: React.FC<Props> = ({ navigation, onLogout }) => {
           <TouchableOpacity onPress={() => go("Termine")} style={styles.item}>
             <Text style={styles.itemText}>Termine</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => go("Chat")} style={styles.item}>
-            <Text style={styles.itemText}>Chat</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mein Profil</Text>
-          <TouchableOpacity onPress={() => go("Uebungen")} style={styles.item}>
-            <Text style={styles.itemText}>Übungen</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => go("Tagebuch")} style={styles.item}>
             <Text style={styles.itemText}>Tagebuch</Text>
           </TouchableOpacity>
@@ -71,52 +65,70 @@ const CustomDrawer: React.FC<Props> = ({ navigation, onLogout }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5D8D0", // peach
+    backgroundColor: "#F9F5F3",
     width: 280,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 16,
   },
   header: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "700",
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#BFA9A0",
-    paddingBottom: 10,
+    marginBottom: 24,
+    color: "#2D2424",
+    borderBottomWidth: 2,
+    borderBottomColor: "#9E86B9",
+    paddingBottom: 16,
   },
   section: {
-    marginTop: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#D8BFB7",
-    paddingBottom: 12,
+    marginTop: 20,
+    marginBottom: 8,
   },
   sectionTitle: {
-    color: "#4A3F3C",
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#9E86B9",
+    marginBottom: 12,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   item: {
-    paddingVertical: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(158, 134, 185, 0.08)",
   },
   itemText: {
-    color: "#6B5B58",
-    fontSize: 14,
+    color: "#2D2424",
+    fontSize: 16,
+    fontWeight: "500",
   },
   footer: {
-    padding: 16,
+    padding: 24,
     borderTopWidth: 1,
-    borderTopColor: "#D8BFB7",
+    borderTopColor: "#E5DED9",
+    marginTop: "auto",
   },
-  logout: {},
+  logout: {
+    backgroundColor: "rgba(177, 42, 42, 0.1)",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
   logoutText: {
     color: "#B12A2A",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
 

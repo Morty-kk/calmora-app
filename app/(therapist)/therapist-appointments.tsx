@@ -357,18 +357,6 @@ export default function TherapistAppointments() {
                 </View>
               ))
             )}
-
-            {/* مثال: زر إضافة لاحقاً */}
-            <Pressable
-              style={styles.addBtn}
-              onPress={() => {
-                setDraftNote("");
-                setEditorOpen(true);
-              }}
-            >
-              <Ionicons name="add" size={18} color="#111" />
-              <Text style={styles.addBtnText}>Termin-Slot hinzufügen (optional)</Text>
-            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>

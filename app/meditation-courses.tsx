@@ -22,6 +22,7 @@ const COURSES = [
     tag: "Alltag" as Tag,
     length: "10 Min",
     youtubeUrl: "https://www.youtube.com/watch?v=O-6f5wQXSu8",
+    color: "#6DB4C8", // Blau
   },
   {
     id: "clear-head",
@@ -30,6 +31,7 @@ const COURSES = [
     tag: "Therapie" as Tag,
     length: "10 Min",
     youtubeUrl: "https://www.youtube.com/watch?v=ZToicYcHIOU",
+    color: "#80D4BF", // Grün/Mint
   },
   {
     id: "evening-wave",
@@ -38,6 +40,7 @@ const COURSES = [
     tag: "Abend" as Tag,
     length: "3 Min",
     youtubeUrl: "https://www.youtube.com/watch?v=aNXKjGFUlMs",
+    color: "#F4C4BC", // Rosa/Peach
   },
   {
     id: "inner-balance",
@@ -46,6 +49,7 @@ const COURSES = [
     tag: "Alltag" as Tag,
     length: "6 Min",
     youtubeUrl: "https://www.youtube.com/watch?v=ssss7V1_eyA",
+    color: "#B8A7D9", // Lila
   },
 ];
 
@@ -71,9 +75,7 @@ export default function MeditationCourses() {
 
         <Text style={styles.headerTitle}>Meditation</Text>
 
-        <View style={styles.headerIconRight}>
-          <Ionicons name="person-circle-outline" size={28} color="#1F2933" />
-        </View>
+        <View style={{ width: 36 }} />
       </View>
 
       <Text style={styles.sectionTitle}>Kurse</Text>
@@ -104,7 +106,7 @@ export default function MeditationCourses() {
         {filtered.map((course) => (
           <TouchableOpacity
             key={course.id}
-            style={styles.courseCard}
+            style={[styles.courseCard, { backgroundColor: course.color }]}
             activeOpacity={0.85}
             onPress={() => Linking.openURL(course.youtubeUrl)}
           >
@@ -141,14 +143,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: "#111827",
-  },
-  headerIconRight: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
   },
 
   sectionTitle: {
@@ -190,7 +184,6 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.9)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,

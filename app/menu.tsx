@@ -245,25 +245,10 @@ export default function Menu() {
               <Pressable style={styles.menuItem} onPress={() => router.push("/appointment")}>
                 <Text style={styles.subMenuText}>Termine</Text>
               </Pressable>
-
-              {/* ✅ Chat بدون Badge */}
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  router.push("/chat");
-                }}
-              >
-                <Text style={styles.subMenuText}>Chat</Text>
-              </Pressable>
             </View>
 
             <Pressable style={styles.menuItem} onPress={() => router.push("/profile")}>
               <Text style={styles.menuText}>Mein Profil</Text>
-            </Pressable>
-
-            <Pressable style={styles.menuItem} onPress={() => router.push("/mindfulness")}>
-              <Text style={styles.menuText}>Übungen</Text>
             </Pressable>
 
             <Pressable style={styles.menuItem} onPress={() => router.push("/diary")}>

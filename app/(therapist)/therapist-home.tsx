@@ -175,7 +175,7 @@ export default function TherapistHome() {
         <View style={styles.quickRow}>
           <Pressable style={styles.quickBtn} onPress={() => router.push("/therapist-appointments")}>
             <Ionicons name="calendar-outline" size={22} color="#111" />
-            <Text style={styles.quickText}>Termin erstellen</Text>
+            <Text style={styles.quickText}>Termine</Text>
           </Pressable>
 
           <Pressable style={styles.quickBtn} onPress={() => router.push("/sitzungverlauf")}>
