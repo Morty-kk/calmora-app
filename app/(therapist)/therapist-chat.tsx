@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -74,6 +74,8 @@ export default function TherapistChatScreen() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
+  const listRef = useRef<FlatList<ChatMessage>>(null);
+
   /** ================= LOAD MESSAGES ================= */
   const loadMessages = useCallback(
     async (options: { cursor?: number; append?: boolean } = {}) => {
@@ -132,7 +134,7 @@ export default function TherapistChatScreen() {
     return () => clearInterval(interval);
   }, [token, invalidConversation, loadMessages]);
 
-  /** ================= MARK CONVERSATION AS READ (ONE REQUEST) ================= */
+  /** ================= MARK CONVERSATION AS READ ================= */
   useEffect(() => {
     if (!token || !myId || invalidConversation) return;
     if (messages.length === 0) return;
@@ -150,7 +152,6 @@ export default function TherapistChatScreen() {
       )
     );
 
-    // One backend call
     markConversationRead(token, conversationIdNumber).catch(() => null);
   }, [messages, token, myId, conversationIdNumber, invalidConversation]);
 
@@ -194,10 +195,6 @@ export default function TherapistChatScreen() {
     }
   };
 
-  // ✅ مساحة تحت للـ FlatList حتى ما ينغطّى بالـ input
-  const bottomBarHeight = 56;
-  const listBottomPadding = bottomBarHeight + Math.max(insets.bottom, 10) + 12;
-
   /** ================= UI ================= */
   return (
     <View style={styles.container}>
@@ -222,13 +219,13 @@ export default function TherapistChatScreen() {
         <Ionicons name="call" size={22} color="#111827" />
       </View>
 
+      {/* ✅ على iOS: خليه يزحلق المحتوى بشكل طبيعي بدون absolute bar */}
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        // ✅ offset صغير لأن الـ input مثبت absolute
-        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        // ✅ offset منطقي: مسافة safe-area + الهيدر (تقريباً)
+        keyboardVerticalOffset={Platform.OS === "ios" ? Math.max(insets.top, 14) + 56 : 0}
       >
-        {/* CHAT */}
         <ImageBackground
           source={require("../../assets/bg.png")}
           style={styles.chatArea}
@@ -241,16 +238,14 @@ export default function TherapistChatScreen() {
             <Text style={styles.errorText}>{error}</Text>
           ) : (
             <FlatList
+              ref={listRef}
               data={messages}
               keyExtractor={(item) => item.id.toString()}
               inverted
               showsVerticalScrollIndicator={false}
               keyboardDismissMode="interactive"
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={[
-                styles.messages,
-                { paddingBottom: listBottomPadding },
-              ]}
+              contentContainerStyle={styles.messages}
               renderItem={({ item }) => {
                 const isMe = Number(item.senderId) === Number(myId);
                 return (
@@ -271,16 +266,23 @@ export default function TherapistChatScreen() {
                   </View>
                 );
               }}
-              onEndReached={() =>
-                nextCursor && loadMessages({ cursor: nextCursor, append: true })
-              }
+              onEndReached={() => {
+                if (nextCursor !== null) {
+                  loadMessages({ cursor: nextCursor, append: true });
+                }
+              }}
               onEndReachedThreshold={0.4}
             />
           )}
         </ImageBackground>
 
-        {/* ✅ Input ثابت تحت (حل iPhone النهائي) */}
-        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+        {/* ✅ INPUT BAR (بدون absolute) */}
+        <View
+          style={[
+            styles.bottomBar,
+            { paddingBottom: Math.max(insets.bottom, 10) },
+          ]}
+        >
           <TextInput
             style={styles.input}
             placeholder="Nachricht schreiben..."
@@ -290,8 +292,12 @@ export default function TherapistChatScreen() {
             onSubmitEditing={handleSend}
             returnKeyType="send"
           />
-          <TouchableOpacity onPress={handleSend}>
-            <Ionicons name="send" size={22} color="#111827" />
+          <TouchableOpacity onPress={handleSend} disabled={sending}>
+            <Ionicons
+              name="send"
+              size={22}
+              color={sending ? "#9CA3AF" : "#111827"}
+            />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -301,7 +307,9 @@ export default function TherapistChatScreen() {
 
 /** ================= STYLES ================= */
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: "#E5E7EB" },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -309,13 +317,15 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 10,
     backgroundColor: "#E5E7EB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#D1D5DB",
   },
   roleBadge: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
   avatar: { width: 34, height: 34, borderRadius: 17 },
   name: { fontSize: 16, fontWeight: "600", color: "#111827" },
 
   chatArea: { flex: 1 },
-  messages: { padding: 16 },
+  messages: { padding: 16, paddingBottom: 12 },
 
   bubble: {
     maxWidth: "80%",
@@ -336,15 +346,13 @@ const styles = StyleSheet.create({
   timeLeft: { fontSize: 10, color: "#6B7280", marginTop: 4 },
 
   bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#E5E7EB",
     paddingHorizontal: 10,
     paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#D1D5DB",
   },
   input: {
     flex: 1,
@@ -359,4 +367,3 @@ const styles = StyleSheet.create({
   centered: { marginTop: 20, alignItems: "center" },
   errorText: { textAlign: "center", marginTop: 20, color: "#B00020" },
 });
-

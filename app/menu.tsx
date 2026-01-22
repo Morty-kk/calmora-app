@@ -37,16 +37,14 @@ export default function Menu() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userName, setUserName] = useState("...");
 
+  // ✅ نتركها موجودة لأن رح نستخدمها بالـ BottomTabs (مو هون)
   const { unreadChats } = useNotify();
 
-  // ✅ الموعد القادم (من الباك-إند)
   const [appointment, setAppointment] = useState<NextAppointment | null>(null);
 
-  // ✅ جلب اسم المستخدم + جلب أقرب موعد من Backend
   useEffect(() => {
     const loadData = async () => {
       try {
-        // ---- user name ----
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const user = JSON.parse(storedUser);
@@ -55,14 +53,12 @@ export default function Menu() {
           setUserName("Gast");
         }
 
-        // ---- token ----
         const token = await AsyncStorage.getItem("token");
         if (!token) {
           setAppointment(null);
           return;
         }
 
-        // ---- fetch appointments ----
         const res = await fetch(`${BACKEND_URL}/appointments/mine`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -79,7 +75,6 @@ export default function Menu() {
         const items = data.items ?? [];
         const now = new Date();
 
-        // ✅ خذ أقرب موعد قادم + استبعد CANCELLED
         const upcoming = items
           .map((a: any) => ({
             ...a,
@@ -101,7 +96,6 @@ export default function Menu() {
           minute: "2-digit",
         });
 
-        // إذا الباك-إند بيرجع therapist/email
         const therapistName =
           upcoming?.therapist?.name ||
           upcoming?.therapist?.email ||
@@ -122,7 +116,6 @@ export default function Menu() {
     loadData();
   }, []);
 
-  // 🔥 Logout
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("user");
@@ -217,6 +210,7 @@ export default function Menu() {
 
         <View style={{ flex: 1 }} />
 
+        {/* ✅ Bottom Tabs (هنا بدنا نحط الـ badge تحت) */}
         <BottomTabs />
       </View>
 
@@ -252,7 +246,7 @@ export default function Menu() {
                 <Text style={styles.subMenuText}>Termine</Text>
               </Pressable>
 
-              {/* ✅ Chat + Badge */}
+              {/* ✅ Chat بدون Badge */}
               <Pressable
                 style={styles.menuItem}
                 onPress={() => {
@@ -260,15 +254,7 @@ export default function Menu() {
                   router.push("/chat");
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.subMenuText}>Chat</Text>
-
-                  {unreadChats > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{unreadChats > 99 ? "99+" : unreadChats}</Text>
-                    </View>
-                  )}
-                </View>
+                <Text style={styles.subMenuText}>Chat</Text>
               </Pressable>
             </View>
 
@@ -286,7 +272,6 @@ export default function Menu() {
 
             <View style={styles.menuDivider} />
 
-            {/* LOGOUT */}
             <Pressable style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.logoutText}>abmelden</Text>
             </Pressable>
@@ -396,21 +381,4 @@ const styles = StyleSheet.create({
   subMenuText: { fontSize: 14, color: "#475569" },
 
   logoutText: { fontSize: 16, color: "#B91C1C", fontWeight: "700" },
-
-  // ✅ Badge Styles
-  badge: {
-    marginLeft: 8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 6,
-    backgroundColor: "red",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "700",
-  },
 });

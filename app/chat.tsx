@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../context/AuthContext";
 import { useNotify } from "../context/NotifyContext";
@@ -35,15 +36,13 @@ function formatTime(value: string) {
 }
 
 export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
+
   const { token, user } = useAuth();
   const { setUnreadChats } = useNotify();
 
   const u: any = user;
   const myId = u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
-
-  useEffect(() => {
-    setUnreadChats(0);
-  }, [setUnreadChats]);
 
   const { conversationId, partnerEmail } = useLocalSearchParams();
 
@@ -70,6 +69,13 @@ export default function ChatScreen() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
+  // avoid double initial load (fast refresh etc.)
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    setUnreadChats(0);
+  }, [setUnreadChats]);
+
   const loadMessages = useCallback(
     async (options: { cursor?: number; append?: boolean } = {}) => {
       if (!token || invalidConversation) return;
@@ -90,8 +96,8 @@ export default function ChatScreen() {
 
           if (prev.length === 0) return data.messages;
 
-          const latestIds = new Set(data.messages.map((message) => message.id));
-          const preserved = prev.filter((message) => !latestIds.has(message.id));
+          const latestIds = new Set(data.messages.map((m) => m.id));
+          const preserved = prev.filter((m) => !latestIds.has(m.id));
           return [...data.messages, ...preserved];
         });
       } catch (err) {
@@ -118,6 +124,10 @@ export default function ChatScreen() {
       setLoading(false);
       return;
     }
+
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+
     loadMessages();
   }, [invalidConversation, loadMessages, token]);
 
@@ -173,13 +183,8 @@ export default function ChatScreen() {
     setSending(true);
 
     try {
-      const data = await sendMessage(token, conversationIdNumber, {
-        content: text,
-      });
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? data.message : m))
-      );
+      const data = await sendMessage(token, conversationIdNumber, { content: text });
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? data.message : m)));
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError(
@@ -190,10 +195,105 @@ export default function ChatScreen() {
     }
   };
 
+  // Native padding (iOS/Android)
+  const bottomBarHeight = 56;
+  const listBottomPaddingNative =
+    bottomBarHeight + Math.max(insets.bottom, 12) + 12;
+
+  // Web padding because input is fixed
+  const listBottomPaddingWeb = 140;
+
+  const Content = (
+    <>
+      <ImageBackground
+        source={require("../assets/bg.png")}
+        style={styles.chatArea}
+        resizeMode="cover"
+      >
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="small" color="#7C6FB3" />
+          </View>
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : messages.length === 0 ? (
+          <Text style={styles.emptyText}>Noch keine Nachrichten.</Text>
+        ) : (
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => {
+              const isUser = Number(item.senderId) === Number(myId);
+              return (
+                <View
+                  style={[
+                    styles.bubble,
+                    isUser ? styles.rightBubble : styles.leftBubble,
+                  ]}
+                >
+                  <Text style={isUser ? styles.rightText : styles.leftText}>
+                    {item.content}
+                  </Text>
+                  <Text style={isUser ? styles.timeRight : styles.timeLeft}>
+                    {formatTime(item.createdAt)}
+                    {isUser ? (item.readAt ? " ✓✓" : " ✓") : ""}
+                  </Text>
+                </View>
+              );
+            }}
+            inverted
+            contentContainerStyle={[
+              styles.messagesContainer,
+              {
+                paddingBottom:
+                  Platform.OS === "web"
+                    ? listBottomPaddingWeb
+                    : listBottomPaddingNative,
+              },
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            onEndReached={() => {
+              if (nextCursor) loadMessages({ cursor: nextCursor, append: true });
+            }}
+            onEndReachedThreshold={0.4}
+          />
+        )}
+      </ImageBackground>
+
+      {/* INPUT */}
+      <View
+        style={[
+          styles.inputWrapper,
+          Platform.OS === "web"
+            ? styles.inputWrapperWeb
+            : { paddingBottom: Math.max(insets.bottom, 12) },
+        ]}
+      >
+        <View style={styles.inputBar}>
+          <Ionicons name="add" size={26} />
+          <TextInput
+            placeholder="schreibe eine Nachricht..."
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={handleSend}
+            returnKeyType="send"
+            // Safari sometimes zooms on small font inputs; keep font >= 16 if needed
+          />
+          <TouchableOpacity onPress={handleSend}>
+            <Ionicons name="send" size={22} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 14) }]}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="black" />
         </Pressable>
@@ -207,97 +307,39 @@ export default function ChatScreen() {
         <Ionicons name="call" size={22} color="black" style={{ marginLeft: "auto" }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-      >
-        <ImageBackground
-          source={require("../assets/bg.png")}
-          style={styles.chatArea}
-          resizeMode="cover"
+      {/* WEB: no KeyboardAvoidingView (it breaks on Safari) */}
+      {Platform.OS === "web" ? (
+        <View style={{ flex: 1 }}>{Content}</View>
+      ) : (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={0}
         >
-          {loading ? (
-            <View style={styles.centered}>
-              <ActivityIndicator size="small" color="#7C6FB3" />
-            </View>
-          ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : messages.length === 0 ? (
-            <Text style={styles.emptyText}>Noch keine Nachrichten.</Text>
-          ) : (
-            <FlatList
-              data={messages}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => {
-                const isUser = Number(item.senderId) === Number(myId);
-                return (
-                  <View
-                    style={[
-                      styles.bubble,
-                      isUser ? styles.rightBubble : styles.leftBubble,
-                    ]}
-                  >
-                    <Text style={isUser ? styles.rightText : styles.leftText}>
-                      {item.content}
-                    </Text>
-                    <Text style={isUser ? styles.timeRight : styles.timeLeft}>
-                      {formatTime(item.createdAt)}
-                      {isUser ? (item.readAt ? " ✓✓" : " ✓") : ""}
-                    </Text>
-                  </View>
-                );
-              }}
-              inverted
-              contentContainerStyle={styles.messagesContainer}
-              showsVerticalScrollIndicator={false}
-              keyboardDismissMode="interactive"
-              keyboardShouldPersistTaps="handled"
-              onEndReached={() => {
-                if (nextCursor) {
-                  loadMessages({ cursor: nextCursor, append: true });
-                }
-              }}
-              onEndReachedThreshold={0.4}
-            />
-          )}
-        </ImageBackground>
-
-        {/* ✅ SAFE AREA WRAPPER */}
-        <View style={styles.inputWrapper}>
-          <View style={styles.inputBar}>
-            <Ionicons name="add" size={26} />
-            <TextInput
-              placeholder="schreibe eine Nachricht..."
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              onSubmitEditing={handleSend}
-              returnKeyType="send"
-            />
-            <TouchableOpacity onPress={handleSend}>
-              <Ionicons name="send" size={22} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+          {Content}
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FADDC8" },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
     backgroundColor: "#FADDC8",
   },
+
   avatar: { width: 34, height: 34, borderRadius: 17, marginHorizontal: 10 },
   name: { fontSize: 16, fontWeight: "600" },
 
   chatArea: { flex: 1 },
-  messagesContainer: { padding: 15, paddingBottom: 24 },
+
+  messagesContainer: { padding: 15 },
 
   bubble: { padding: 12, borderRadius: 18, marginBottom: 10, maxWidth: "80%" },
   rightBubble: { backgroundColor: "#B28AD6", alignSelf: "flex-end" },
@@ -307,11 +349,20 @@ const styles = StyleSheet.create({
   timeRight: { fontSize: 10, color: "white", textAlign: "right", marginTop: 4 },
   timeLeft: { fontSize: 10, color: "#555", marginTop: 4 },
 
-  // ✅ SAFE AREA FIX
   inputWrapper: {
     backgroundColor: "#FADDC8",
-    paddingBottom: Platform.OS === "ios" ? 20 : 0,
   },
+
+  // ✅ Web fix: keep input always visible at bottom in Safari
+  inputWrapperWeb: {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FADDC8",
+    paddingBottom: 12,
+  },
+
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -324,14 +375,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    fontSize: 14,
+    paddingVertical: 10,
+    fontSize: 16, // مهم للـ Safari: أقل من 16 ممكن يعمل zoom
   },
 
   centered: { marginTop: 20, alignItems: "center" },
   emptyText: { marginTop: 20, color: "#7C6FB3", textAlign: "center" },
   errorText: { marginTop: 20, color: "#B00020", textAlign: "center" },
 });
-
-
-

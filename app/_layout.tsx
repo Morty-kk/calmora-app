@@ -1,3 +1,5 @@
+import "expo-router/entry";
+
 import { Stack, router, usePathname } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Alert } from "react-native";

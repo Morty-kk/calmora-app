@@ -19,6 +19,8 @@ model User {
   therapistConversations Conversation[] @relation("TherapistConversations")
     patientAppointments   Appointment[] @relation("PatientAppointments")
   therapistAppointments Appointment[] @relation("TherapistAppointments")
+    diaryEntries          DiaryEntry[]
+
 
 }
 
@@ -76,4 +78,22 @@ model Appointment {
   @@index([therapistId])
   @@unique([therapistId, startsAt])
 }
+model DiaryEntry {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  entryDate DateTime @db.Date
+  mood      String?  @db.VarChar(32)
+  title     String?  @db.VarChar(120)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entryDate])
+  @@index([deletedAt])
+}
+
 

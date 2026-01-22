@@ -3,6 +3,8 @@ const dotenv = require('dotenv');
 const authRoutes = require('./auth.routes');
 const chatRoutes = require('./chat.routes');
 const appointmentRoutes = require("./appointments.routes");
+const diaryRoutes = require("./diary.routes");
+
 
 
 dotenv.config();
@@ -39,4 +41,8 @@ app.use((err, _req, res, _next) => {
 app.listen(port, '0.0.0.0', () => {
   // eslint-disable-next-line no-console
   console.log(`Server listening on port ${port}`);
+
+
 });
+app.use("/diary", diaryRoutes);
+
