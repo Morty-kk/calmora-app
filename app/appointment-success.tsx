@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 import BottomTabs from '../components/BottomTabs';
 
@@ -10,7 +10,6 @@ type Params = { date?: string; time?: string; name?: string };
 export default function AppointmentSuccess() {
   const { date, time, name } = useLocalSearchParams<Params>();
 
-  // 🔥 عند فتح الصفحة يتم حفظ الموعد الجديد تلقائياً
   useEffect(() => {
     if (!date || !time) return;
 
@@ -32,7 +31,6 @@ export default function AppointmentSuccess() {
     <ImageBackground source={require('../assets/bg.png')} style={s.bg} resizeMode="cover">
       <View style={s.wrap}>
         
-        {/* Mini-Header */}
         <View style={s.header}>
           <Ionicons name="chevron-back" size={22} color="#111827" onPress={() => router.back()} />
           <Ionicons name="menu" size={22} color="#111827" />
@@ -40,7 +38,6 @@ export default function AppointmentSuccess() {
 
         <View style={s.divider} />
 
-        {/* Big Check Icon */}
         <View style={s.center}>
           <View style={s.circleOuter}>
             <View style={s.circleInner}>
@@ -49,7 +46,6 @@ export default function AppointmentSuccess() {
           </View>
         </View>
 
-        {/* Success Text */}
         <Text style={s.msg}>
           Sie haben ein Termin am <Text style={s.strong}>{date ?? '—'}</Text> um{" "}
           <Text style={s.strong}>{time ?? '—'}</Text> vereinbart

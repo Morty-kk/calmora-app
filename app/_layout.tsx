@@ -14,7 +14,6 @@ function InAppChatNotifier() {
   const { setUnreadChats } = useNotify();
   const pathname = usePathname();
 
-  // نخزن آخر lastMessageId لكل محادثة حتى نعرف إذا في جديد
   const lastSeenMapRef = useRef<Record<number, number>>({});
   const initializedRef = useRef(false);
 
@@ -36,14 +35,12 @@ function InAppChatNotifier() {
         const data: any = await getConversations(token);
         const conversations: any[] = data?.conversations ?? [];
 
-        // ✅ تحديث Badge Count (لو عندك unreadCount)
         const unreadTotal = conversations.reduce((sum, c) => {
           const cnt = Number(c?.unreadCount ?? 0);
           return sum + (Number.isFinite(cnt) ? cnt : 0);
         }, 0);
         setUnreadChats(unreadTotal);
 
-        // أول مرة: baseline بدون Alerts
         if (!initializedRef.current) {
           conversations.forEach((c: any) => {
             const convId = Number(c?.id);
@@ -66,17 +63,13 @@ function InAppChatNotifier() {
 
           const lastSeenId = lastSeenMapRef.current[convId] ?? 0;
 
-          // ما في جديد
           if (newLastId <= lastSeenId) continue;
 
-          // حدّث الخريطة فورًا حتى ما يكرر التنبيه
           lastSeenMapRef.current[convId] = newLastId;
 
-          // إذا الرسالة مني أنا → ما بدنا تنبيه
           const senderId = Number(lastMsg?.senderId);
           if (senderId === Number(myId)) continue;
 
-          // إذا أنا حاليًا جوّا صفحة الشات → ما تطلع تنبيه
           const isOnChatScreen =
             pathname === "/chat" ||
             pathname === "/therapist-chat" ||
@@ -104,11 +97,9 @@ function InAppChatNotifier() {
             },
           ]);
 
-          // تنبيه واحد بكل tick حتى ما يصير spam
           break;
         }
       } catch {
-        // ignore
       }
     };
 

@@ -3,19 +3,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import React from "react";
 import {
-  Alert,
-  ImageBackground,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    ImageBackground,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 import { BACKEND_URL } from "../constants/backend";
 
-/* ✅ KALENDER-FUNKTION */
 function buildMonth(year: number, month: number) {
   const first = new Date(year, month, 1);
   const start = new Date(first);
@@ -98,7 +97,6 @@ export default function Diary() {
           return;
         }
 
-        // ✅ UI update
         setEntries((prev) => prev.filter((x) => x.id !== id));
       } catch (e) {
         console.log("delete diary error:", e);
@@ -109,14 +107,12 @@ export default function Diary() {
   );
 
   const handleDelete = (id: number) => {
-    // ✅ Web: window.confirm (مضمون)
     if (Platform.OS === "web") {
       const ok = window.confirm("Willst du diesen Eintrag wirklich löschen?");
       if (ok) doDelete(id);
       return;
     }
 
-    // ✅ Mobile: Alert.alert
     Alert.alert("Eintrag löschen?", "Willst du diesen Eintrag wirklich löschen?", [
       { text: "Abbrechen", style: "cancel" },
       {
@@ -136,7 +132,6 @@ export default function Diary() {
       resizeMode="cover"
     >
       <ScrollView style={styles.container}>
-        {/* HEADER */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} />
@@ -147,13 +142,9 @@ export default function Diary() {
 
         <Text style={styles.title}>Tagebuchansicht</Text>
         <View style={styles.divider} />
-
-        {/* INFO DATE */}
         <Text style={{ fontWeight: "700", marginBottom: 8 }}>
           Ausgewählt: {selectedLabel}
         </Text>
-
-        {/* EINTRÄGE */}
         {loading ? (
           <Text style={{ opacity: 0.7, marginTop: 6 }}>Lade…</Text>
         ) : entries.length === 0 ? (
@@ -182,8 +173,6 @@ export default function Diary() {
             </View>
           ))
         )}
-
-        {/* NEU ERSTELLEN */}
         <Pressable
           style={styles.addBtn}
           onPress={() =>
@@ -195,8 +184,6 @@ export default function Diary() {
         >
           <Text style={styles.addText}>+ neu erstellen</Text>
         </Pressable>
-
-        {/* DATUM + MONATSWECHSEL */}
         <View style={styles.monthRow}>
           <Pressable
             onPress={() =>
@@ -225,8 +212,6 @@ export default function Diary() {
             <Text style={styles.switch}>»</Text>
           </Pressable>
         </View>
-
-        {/* WOCHENTAGE */}
         <View style={styles.weekRow}>
           {["M", "D", "M", "D", "F", "S", "S"].map((d) => (
             <Text key={d} style={styles.weekDay}>
@@ -234,8 +219,6 @@ export default function Diary() {
             </Text>
           ))}
         </View>
-
-        {/* KALENDER */}
         <View style={styles.calendar}>
           {buildMonth(currentMonth.getFullYear(), currentMonth.getMonth()).map((d, i) => {
             const isToday =

@@ -2,20 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Easing,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Vibration,
-  View,
+    Animated,
+    Easing,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    Vibration,
+    View,
 } from "react-native";
 
 export default function BreathExercise() {
   const { id } = useLocalSearchParams();
 
-  // Atemmuster
   const patterns: any = {
     "446": { title: "4-4-6 Atmung", in: 4, hold: 4, out: 6 },
     "478": { title: "4-7-8 Atmung", in: 4, hold: 7, out: 8 },
@@ -25,21 +24,18 @@ export default function BreathExercise() {
 
   const exercise = patterns[id as string];
 
-  const [phase, setPhase] = useState("einatmen"); // ein → halten → aus
+  const [phase, setPhase] = useState("einatmen");
   const [counter, setCounter] = useState(exercise.in);
   const [running, setRunning] = useState(false);
 
-  // Animation scale
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Animation of background color
   const colorAnim = useRef(new Animated.Value(0)).current;
 
-  // Colors for phases
   const colors = {
-    ein: "#A7C7F1", // blue
-    halten: "#F7EFAE", // yellow
-    aus: "#D8B7E8", // purple
+    ein: "#A7C7F1",
+    halten: "#F7EFAE",
+    aus: "#D8B7E8",
   };
 
   const animateBreath = (toValue: number, duration: number) => {
@@ -62,13 +58,11 @@ export default function BreathExercise() {
     }).start();
   };
 
-  // Interpolate circle background color
   const bgColor = colorAnim.interpolate({
     inputRange: [0, 1, 2],
     outputRange: [colors.ein, colors.halten, colors.aus],
   });
 
-  // Timer Logic
   useEffect(() => {
     let timer: any;
 
@@ -111,7 +105,7 @@ export default function BreathExercise() {
 
   const endExercise = () => {
     setRunning(false);
-    router.back(); // zurück zur vorherigen Seite
+    router.back();
   };
 
   return (
@@ -121,7 +115,6 @@ export default function BreathExercise() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Header mit Back-Button */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -133,10 +126,7 @@ export default function BreathExercise() {
 
           <Text style={styles.title}>{exercise.title}</Text>
         </View>
-
-        {/* Inhalt zentriert */}
         <View style={styles.content}>
-          {/* Animated Circle */}
           <Animated.View
             style={[
               styles.circle,
@@ -183,8 +173,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -202,8 +190,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.9)",
   },
   title: { fontSize: 24, fontWeight: "600", color: "#111827" },
-
-  /* CONTENT */
   content: {
     flex: 1,
     justifyContent: "center",

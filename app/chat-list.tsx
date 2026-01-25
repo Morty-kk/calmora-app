@@ -4,21 +4,21 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 import { useAuth } from "../context/AuthContext";
 import { useNotify } from "../context/NotifyContext";
 import {
-  Conversation,
-  createConversation,
-  getConversations,
+    Conversation,
+    createConversation,
+    getConversations,
 } from "../services/api";
 
 type Variant = "patient" | "therapist";
@@ -33,11 +33,9 @@ export default function ChatList({ variant = "patient" }: { variant?: Variant })
   const { token, user } = useAuth();
   const { updateFromConversations } = useNotify();
 
-  // ✅ myId بشكل robust
   const u: any = user;
   const myId = u?.id ?? u?.userId ?? u?.user?.id ?? u?.profile?.id ?? null;
 
-  // ✅ الثيم حسب الصفحة (مريض/طبيب)
   const theme = useMemo(() => {
     if (variant === "therapist") {
       return {
@@ -81,7 +79,6 @@ export default function ChatList({ variant = "patient" }: { variant?: Variant })
       const data = await getConversations(token);
       setConversations(data.conversations);
 
-      // ✅ تحديث unreadChats = مجموع unreadCount
       updateFromConversations(data.conversations);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Chats konnten nicht geladen werden.");
@@ -125,7 +122,6 @@ export default function ChatList({ variant = "patient" }: { variant?: Variant })
 
       const conv = data.conversation;
 
-      // ✅ اختيار الشريك حسب الـ IDs (بدون role)
       const partner =
         Number(myId) === Number(conv.patientId) ? conv.therapist : conv.patient;
 
@@ -146,7 +142,6 @@ export default function ChatList({ variant = "patient" }: { variant?: Variant })
   };
 
   const renderItem = ({ item }: { item: Conversation }) => {
-    // ✅ اختيار الشريك حسب الـ IDs (هذا هو مفتاح الحل)
     const partner =
       Number(myId) === Number(item.patientId) ? item.therapist : item.patient;
 

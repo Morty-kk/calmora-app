@@ -1,10 +1,8 @@
 const prisma = require("./prisma");
 
 function toISODateOnly(value) {
-  // value can be "YYYY-MM-DD" or Date
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  // return YYYY-MM-DD
   return d.toISOString().slice(0, 10);
 }
 
@@ -18,11 +16,8 @@ async function listDiaryEntries(req, res) {
   };
 
   if (date) {
-    // date: YYYY-MM-DD
     const iso = toISODateOnly(date);
     if (!iso) return res.status(400).json({ error: "Invalid date" });
-
-    // entryDate is DATE in DB
     where.entryDate = new Date(iso);
   }
 
@@ -104,7 +99,6 @@ async function deleteDiaryEntry(req, res) {
   });
   if (!existing) return res.status(404).json({ error: "Not found" });
 
-  // ✅ Soft delete
   await prisma.diaryEntry.update({
     where: { id },
     data: { deletedAt: new Date() },

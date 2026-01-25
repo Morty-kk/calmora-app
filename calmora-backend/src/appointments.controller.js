@@ -1,6 +1,5 @@
 const prisma = require("./prisma");
 
-// POST /appointments
 async function createAppointment(req, res) {
   try {
     const patientId = req.user.id;
@@ -32,7 +31,6 @@ async function createAppointment(req, res) {
   }
 }
 
-// GET /appointments/mine
 async function listMyAppointments(req, res) {
   try {
     const patientId = req.user.id;
@@ -40,7 +38,6 @@ async function listMyAppointments(req, res) {
     const items = await prisma.appointment.findMany({
       where: { patientId },
       orderBy: { startsAt: "asc" },
-      // ✅ تعديل هون: ضفنا name
       include: { therapist: { select: { id: true, email: true, name: true } } },
     });
 
@@ -51,7 +48,6 @@ async function listMyAppointments(req, res) {
   }
 }
 
-// GET /appointments/therapist
 async function listTherapistAppointments(req, res) {
   try {
     const therapistId = req.user.id;
@@ -59,7 +55,6 @@ async function listTherapistAppointments(req, res) {
     const items = await prisma.appointment.findMany({
       where: { therapistId },
       orderBy: { startsAt: "asc" },
-      // ✅ تعديل هون: ضفنا name
       include: { patient: { select: { id: true, email: true, name: true } } },
     });
 
@@ -70,7 +65,6 @@ async function listTherapistAppointments(req, res) {
   }
 }
 
-// ✅ GET /appointments/:id
 async function getAppointmentById(req, res) {
   try {
     const id = Number(req.params.id);
@@ -86,7 +80,6 @@ async function getAppointmentById(req, res) {
 
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
 
-    // ✅ صلاحيات: المريض أو المعالج فقط
     const uid = req.user.id;
     if (uid !== appt.patientId && uid !== appt.therapistId) {
       return res.status(403).json({ error: "Forbidden" });
@@ -99,7 +92,6 @@ async function getAppointmentById(req, res) {
   }
 }
 
-// ✅ PATCH /appointments/:id/cancel
 async function cancelAppointment(req, res) {
   try {
     const id = Number(req.params.id);
@@ -108,19 +100,16 @@ async function cancelAppointment(req, res) {
     const appt = await prisma.appointment.findUnique({ where: { id } });
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
 
-    // ✅ صلاحيات
     const uid = req.user.id;
     if (uid !== appt.patientId && uid !== appt.therapistId) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    // ✅ فقط إذا الموعد بالمستقبل
     const now = new Date();
     if (new Date(appt.startsAt).getTime() <= now.getTime()) {
       return res.status(400).json({ error: "Cannot cancel past appointments" });
     }
 
-    // ✅ إذا ملغى أصلاً
     if ((appt.status || "").toUpperCase() === "CANCELLED") {
       return res.status(400).json({ error: "Already cancelled" });
     }
@@ -146,7 +135,6 @@ module.exports = {
   listMyAppointments,
   listTherapistAppointments,
 
-  // ✅ جديد
   getAppointmentById,
   cancelAppointment,
 };

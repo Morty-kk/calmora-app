@@ -33,13 +33,11 @@ app.use("/appointments", appointmentRoutes);
 
 
 app.use((err, _req, res, _next) => {
-  // eslint-disable-next-line no-console
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  // eslint-disable-next-line no-console
   console.log(`Server listening on port ${port}`);
 
 

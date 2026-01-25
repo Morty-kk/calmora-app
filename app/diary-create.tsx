@@ -3,13 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 import { BACKEND_URL } from "../constants/backend";
@@ -91,7 +91,6 @@ export default function DiaryCreate() {
       }
     };
 
-    // ✅ Confirm حسب المنصة
     if (Platform.OS === "web") {
       const ok = window.confirm("Willst du den Eintrag speichern?");
       if (ok) doSave();

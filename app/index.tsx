@@ -1,6 +1,4 @@
-// app/index.tsx
 import { useRouter } from 'expo-router';
-import React from 'react';
 import {
     ImageBackground,
     Platform,
@@ -15,9 +13,6 @@ export default function StartScreen() {
 
   return (
     <ImageBackground
-      // Passe den Pfad an, falls dein Bild woanders liegt:
-      // - liegt es im Projektroot:   ../assets/splash.jpg (so wie hier)
-      // - liegt es in app/assets:    ./assets/splash.jpg
       source={require('../assets/splash.jpg')}
       style={styles.background}
       resizeMode="cover"
@@ -26,7 +21,7 @@ export default function StartScreen() {
         <Text style={styles.title}>Welcome to Calmora</Text>
 
         <TouchableOpacity
-          accessibilityRole="button" // warum: bessere Bedienhilfe
+          accessibilityRole="button"
           style={styles.startButton}
           onPress={() => router.replace('/login-patient')}
           activeOpacity={0.8}
@@ -52,7 +47,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 40,
     color: '#8C789E',
-    // Georgia existiert nicht auf allen Android-Geräten:
     fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'System' }),
     marginBottom: 300,
     textAlign: 'center',

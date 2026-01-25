@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Animated,
     ImageBackground,
@@ -52,8 +52,6 @@ export default function Bodyscan() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-
-        {/* Progress Dots */}
         <View style={styles.dotsContainer}>
           {steps.map((_, i) => (
             <View
@@ -62,8 +60,6 @@ export default function Bodyscan() {
             />
           ))}
         </View>
-
-        {/* Animated Content */}
         <Animated.View
           style={{
             opacity: fade,
@@ -74,7 +70,6 @@ export default function Bodyscan() {
           <Text style={styles.title}>{s.title}</Text>
           <Text style={styles.text}>{s.text}</Text>
 
-          {/* Buttons */}
           {index < steps.length - 1 ? (
             <TouchableOpacity style={styles.btn} onPress={next}>
               <Text style={styles.btnText}>Weiter</Text>
@@ -98,8 +93,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: "center",
   },
-
-  // Progress Dots
   dotsContainer: {
     flexDirection: "row",
     position: "absolute",

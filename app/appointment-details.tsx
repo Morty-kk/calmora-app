@@ -17,12 +17,12 @@ import { BACKEND_URL } from '../constants/backend';
 type Params = { id?: string; name?: string; email?: string };
 
 const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const BASE_SLOTS = ['09:00', '09:30', '10:15', '12:15', '13:00']; // demo
+const BASE_SLOTS = ['09:00', '09:30', '10:15', '12:15', '13:00'];
 
 function buildMonth(year: number, month: number) {
   const first = new Date(year, month, 1);
   const start = new Date(first);
-  start.setDate(first.getDate() - ((first.getDay() + 6) % 7)); // Montag als Start
+  start.setDate(first.getDate() - ((first.getDay() + 6) % 7));
   return Array.from({ length: 42 }, (_, i) => {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
@@ -55,10 +55,9 @@ export default function AppointmentDetails() {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  // simple demo-availability: weekends weniger Slots
   const slotsForDay = (d: Date) => {
-    const day = d.getDay(); // 0=So 6=Sa
-    if (day === 0) return []; // Sonntag geschlossen
+    const day = d.getDay();
+    if (day === 0) return [];
     if (day === 6) return BASE_SLOTS.slice(0, 2);
     return BASE_SLOTS;
   };
@@ -70,19 +69,16 @@ export default function AppointmentDetails() {
     }
 
     try {
-      // ✅ token من AsyncStorage (أنت مخزنه وقت login)
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         Alert.alert('Login', 'Bitte zuerst anmelden.');
         return;
       }
 
-      // ✅ كوّن startsAt من selectedDate + slot
       const [hh, mm] = slot.split(':').map(Number);
       const startsAt = new Date(selectedDate);
       startsAt.setHours(hh, mm, 0, 0);
 
-      // ✅ الطبيب المختار من الصفحة السابقة
       const therapistEmail = (email ?? 'therapist@example.com').trim();
 
       const res = await fetch(`${BACKEND_URL}/appointments`, {
@@ -108,7 +104,6 @@ export default function AppointmentDetails() {
         return;
       }
 
-      // ✅ نجاح → روح على success مثل ما عندك
       const d = selectedDate.toLocaleDateString('de-DE');
       router.push({
         pathname: '/appointment-success',
@@ -127,7 +122,6 @@ export default function AppointmentDetails() {
       resizeMode="cover"
     >
       <View style={s.wrap}>
-        {/* Header */}
         <View style={s.headerRow}>
           <Pressable onPress={() => router.back()} style={s.backBtn}>
             <Ionicons name="chevron-back" size={20} color="#111827" />
@@ -136,7 +130,6 @@ export default function AppointmentDetails() {
         </View>
         <View style={s.line} />
 
-        {/* Monat */}
         <View style={s.monthRow}>
           <Pressable
             onPress={() =>
@@ -159,7 +152,6 @@ export default function AppointmentDetails() {
           </Pressable>
         </View>
 
-        {/* Wochentage */}
         <View style={s.weekRow}>
           {WEEK.map((w) => (
             <Text key={w} style={s.weekCell}>
@@ -168,7 +160,6 @@ export default function AppointmentDetails() {
           ))}
         </View>
 
-        {/* Kalender */}
         <View style={s.grid}>
           {days.map((d, i) => {
             const inMonth = d.getMonth() === current.getMonth();
@@ -197,14 +188,12 @@ export default function AppointmentDetails() {
           })}
         </View>
 
-        {/* Datum */}
         <Text style={s.dateLine}>
           {selectedDate
             ? selectedDate.toLocaleDateString('de-DE')
             : new Date().toLocaleDateString('de-DE')}
         </Text>
 
-        {/* Slots */}
         <View style={s.slotRow}>
           {(selectedDate ? slotsForDay(selectedDate) : BASE_SLOTS).map((t) => (
             <Pressable
@@ -219,7 +208,6 @@ export default function AppointmentDetails() {
           ))}
         </View>
 
-        {/* Notizen */}
         <TextInput
           placeholder="Notizen"
           value={notes}
@@ -228,7 +216,6 @@ export default function AppointmentDetails() {
           style={s.notes}
         />
 
-        {/* Bestätigen */}
         <Pressable style={s.primaryBtn} onPress={onConfirm}>
           <Text style={s.primaryText}>Termin bestätigen</Text>
         </Pressable>

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
@@ -41,7 +41,7 @@ export default function SinnesCheck() {
   const next = () => {
     fadeAnim.setValue(0);
     if (step < blocks.length - 1) setStep(step + 1);
-    else router.push("/achtsamkeit-5sinne_done"); // ← صفحة النهاية
+    else router.push("/achtsamkeit-5sinne_done");
   };
 
   const b = blocks[step];
@@ -54,7 +54,6 @@ export default function SinnesCheck() {
     >
       <View style={styles.container}>
 
-        {/* Progress dots */}
         <View style={styles.dotsContainer}>
           {blocks.map((_, i) => (
             <View
@@ -64,12 +63,10 @@ export default function SinnesCheck() {
           ))}
         </View>
 
-        {/* Pulse circle */}
         <Animated.View
           style={[styles.circle, { transform: [{ scale: pulse }] }]}
         />
 
-        {/* Animated content */}
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.blockTitle}>{b.title}</Text>
           <Text style={styles.blockText}>{b.text}</Text>

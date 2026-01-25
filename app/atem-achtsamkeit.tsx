@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Animated,
     ImageBackground,
@@ -30,21 +30,18 @@ export default function AtemAchtsamkeit() {
   useEffect(() => {
     if (!started) return;
 
-    // animate circle
     Animated.timing(scale, {
       toValue: current.scale,
       duration: current.duration * 1000,
       useNativeDriver: true,
     }).start();
 
-    // animate progress bar
     Animated.timing(progress, {
       toValue: (step + 1) / phases.length,
       duration: current.duration * 1000,
       useNativeDriver: false,
     }).start();
 
-    // countdown
     let sec = current.duration;
     const interval = setInterval(() => {
       sec--;
@@ -53,11 +50,9 @@ export default function AtemAchtsamkeit() {
       if (sec === 0) {
         clearInterval(interval);
 
-        // next phase
         if (step < phases.length - 1) {
           setStep(step + 1);
         } else {
-          // restart the loop
           setStep(0);
         }
       }
@@ -89,18 +84,14 @@ export default function AtemAchtsamkeit() {
           </>
         ) : (
           <>
-            {/* Breathing Circle */}
             <Animated.View
               style={[styles.circle, { transform: [{ scale }] }]}
             />
 
-            {/* Phase Text */}
             <Text style={styles.phase}>{current.label}</Text>
 
-            {/* Counter */}
             <Text style={styles.counter}>{count}</Text>
 
-            {/* Progress Bar */}
             <View style={styles.progressBarBg}>
               <Animated.View
                 style={[
@@ -115,7 +106,6 @@ export default function AtemAchtsamkeit() {
               />
             </View>
 
-            {/* Quit Button */}
             <TouchableOpacity
               style={styles.endBtn}
               onPress={() => router.back()}
@@ -138,8 +128,6 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingHorizontal: 20,
   },
-
-  /* Start screen */
   title: {
     fontSize: 34,
     fontWeight: "800",
@@ -162,8 +150,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
   },
-
-  /* Circle */
   circle: {
     width: 220,
     height: 220,
@@ -172,24 +158,18 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#9E86B9",
   },
-
-  /* Phase */
   phase: {
     fontSize: 32,
     fontWeight: "700",
     color: "#3B2F4A",
     marginTop: 10,
   },
-
-  /* Counter */
   counter: {
     fontSize: 52,
     fontWeight: "900",
     color: "#9E86B9",
     marginBottom: 10,
   },
-
-  /* Progress Bar */
   progressBarBg: {
     width: "80%",
     height: 8,
@@ -202,8 +182,6 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#9E86B9",
   },
-
-  /* End Button */
   endBtn: {
     marginTop: 20,
     backgroundColor: "white",

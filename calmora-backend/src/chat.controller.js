@@ -94,7 +94,6 @@ async function listConversations(req, res) {
     orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
   });
 
-  // ✅ حساب unreadCount لكل محادثة (رسائل الطرف الآخر فقط و readAt = null)
   const conversationIds = conversations.map((c) => c.id);
 
   const unreadGroups =
@@ -125,7 +124,6 @@ async function listConversations(req, res) {
     therapist: serializeUser(conversation.therapist),
     lastMessage: conversation.messages[0] || null,
 
-    // ✅ الجديد
     unreadCount: unreadByConversationId.get(conversation.id) || 0,
   }));
 
@@ -235,7 +233,6 @@ async function markMessageRead(req, res) {
   return res.json({ message: updated });
 }
 
-// ✅ جديد: قراءة كل رسائل المحادثة دفعة واحدة
 async function markConversationRead(req, res) {
   const currentUser = req.user;
   const conversationId = Number(req.params.id);
@@ -270,8 +267,6 @@ module.exports = {
   listMessages,
   sendMessage,
   markMessageRead,
-
-  // ✅ الجديد
   markConversationRead,
 };
 

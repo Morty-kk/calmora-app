@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function BreathMenu() {
@@ -43,7 +43,6 @@ export default function BreathMenu() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#000" />
@@ -57,8 +56,6 @@ export default function BreathMenu() {
             </Text>
           </View>
         </View>
-
-        {/* LISTE */}
         {exercises.map((item) => (
           <View
             key={item.id}
@@ -89,8 +86,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -99,16 +94,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: "700" },
   subtitle: { fontSize: 13, color: "#444", marginTop: 4 },
-
-  /* CARD */
   card: {
     padding: 18,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 18,
-
-    // Shadow (iOS + Android). On Web it's ignored.
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -116,8 +107,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 18, fontWeight: "600" },
   cardDesc: { fontSize: 13, color: "#666", marginTop: 4 },
-
-  /* BUTTON (wie in Achtsamkeit) */
   btn: {
     backgroundColor: "#ffffff",
     paddingVertical: 6,

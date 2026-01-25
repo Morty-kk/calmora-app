@@ -37,7 +37,7 @@ async function register(req, res) {
     email,
     passwordHash,
     role: normalizedRole,
-    name, // ✅ هون أهم سطر
+    name,
   },
 });
 

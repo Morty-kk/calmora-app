@@ -33,13 +33,11 @@ async function main() {
 });
 
 
-  // eslint-disable-next-line no-console
   console.log("Seeded patient and therapist users");
 }
 
 main()
   .catch((err) => {
-    // eslint-disable-next-line no-console
     console.error("Seed error:", err);
     process.exitCode = 1;
   })

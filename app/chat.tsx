@@ -2,28 +2,28 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  ImageBackground,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../context/AuthContext";
 import { useNotify } from "../context/NotifyContext";
 import {
-  ChatMessage,
-  getConversationMessages,
-  markConversationRead,
-  sendMessage,
+    ChatMessage,
+    getConversationMessages,
+    markConversationRead,
+    sendMessage,
 } from "../services/api";
 
 const PAGE_SIZE = 30;
@@ -69,7 +69,6 @@ export default function ChatScreen() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
-  // avoid double initial load (fast refresh etc.)
   const mountedRef = useRef(false);
 
   useEffect(() => {
@@ -141,7 +140,6 @@ export default function ChatScreen() {
     return () => clearInterval(interval);
   }, [loadMessages, token, invalidConversation]);
 
-  // ✅ mark conversation as read once (optimistic UI)
   useEffect(() => {
     if (!token || !myId || invalidConversation) return;
     if (messages.length === 0) return;
@@ -195,12 +193,10 @@ export default function ChatScreen() {
     }
   };
 
-  // Native padding (iOS/Android)
   const bottomBarHeight = 56;
   const listBottomPaddingNative =
     bottomBarHeight + Math.max(insets.bottom, 12) + 12;
 
-  // Web padding because input is fixed
   const listBottomPaddingWeb = 140;
 
   const Content = (
@@ -261,8 +257,6 @@ export default function ChatScreen() {
           />
         )}
       </ImageBackground>
-
-      {/* INPUT */}
       <View
         style={[
           styles.inputWrapper,
@@ -280,7 +274,6 @@ export default function ChatScreen() {
             onChangeText={setInput}
             onSubmitEditing={handleSend}
             returnKeyType="send"
-            // Safari sometimes zooms on small font inputs; keep font >= 16 if needed
           />
           <TouchableOpacity onPress={handleSend}>
             <Ionicons name="send" size={22} />
@@ -292,7 +285,6 @@ export default function ChatScreen() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 14) }]}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="black" />
@@ -307,7 +299,6 @@ export default function ChatScreen() {
         <Ionicons name="call" size={22} color="black" style={{ marginLeft: "auto" }} />
       </View>
 
-      {/* WEB: no KeyboardAvoidingView (it breaks on Safari) */}
       {Platform.OS === "web" ? (
         <View style={{ flex: 1 }}>{Content}</View>
       ) : (
@@ -352,8 +343,6 @@ const styles = StyleSheet.create({
   inputWrapper: {
     backgroundColor: "#FADDC8",
   },
-
-  // ✅ Web fix: keep input always visible at bottom in Safari
   inputWrapperWeb: {
     position: "fixed",
     left: 0,

@@ -1,10 +1,10 @@
 import { router } from "expo-router";
 import {
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function SinneDone() {
@@ -15,8 +15,6 @@ export default function SinneDone() {
       style={styles.bg}
     >
       <View style={styles.container}>
-
-        {/* SAME DOTS STYLE AS BODYSCAN */}
         <View style={styles.dotsContainer}>
           {[1, 2, 3, 4, 5].map((_, i) => (
             <View key={i} style={styles.dot} />
@@ -49,8 +47,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
   },
-
-  /** DOTS EXACTLY LIKE BODYSCAN */
   dotsContainer: {
     flexDirection: "row",
     position: "absolute",
@@ -64,8 +60,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: "#ffffff90",
   },
-
-  /** TITLE STYLE SAME AS BODYSCAN */
   title: {
     fontSize: 32,
     fontWeight: "700",
@@ -81,8 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     lineHeight: 26,
   },
-
-  /** PURPLE BUTTON EXACT SAME STYLE */
   button: {
     backgroundColor: "#FFFFFF",
     paddingVertical: 12,

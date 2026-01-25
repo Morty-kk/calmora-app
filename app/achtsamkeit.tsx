@@ -16,10 +16,9 @@ export default function AchtsamkeitMenu() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Header mit Back-Button */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.replace("/menu")} // ✅ دايمًا يرجع عالـ Menu
+            onPress={() => router.replace("/menu")}
             style={styles.backButton}
             activeOpacity={0.7}
           >
@@ -35,7 +34,6 @@ export default function AchtsamkeitMenu() {
           </View>
         </View>
 
-        {/* 5-Sinnes-Check */}
         <View style={[styles.card, { backgroundColor: "#C9E9EA" }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>5-Sinnes-Check</Text>
@@ -52,7 +50,6 @@ export default function AchtsamkeitMenu() {
           </TouchableOpacity>
         </View>
 
-        {/* Bodyscan */}
         <View style={[styles.card, { backgroundColor: "#B7D6E5" }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Bodyscan kurz</Text>
@@ -69,7 +66,6 @@ export default function AchtsamkeitMenu() {
           </TouchableOpacity>
         </View>
 
-        {/* Atem-Achtsamkeit */}
         <View style={[styles.card, { backgroundColor: "#F7D4A8" }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Beobachte deinen Atem</Text>
@@ -97,8 +93,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -128,8 +122,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
   },
-
-  /* KARTEN */
   card: {
     padding: 18,
     borderRadius: 16,
@@ -151,8 +143,6 @@ const styles = StyleSheet.create({
     color: "#3B3B3B",
     marginTop: 4,
   },
-
-  /* BUTTON */
   btn: {
     backgroundColor: "#ffffff",
     paddingVertical: 6,

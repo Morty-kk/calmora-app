@@ -33,8 +33,6 @@ export default function BottomTabs() {
       >
         <View style={{ position: "relative" }}>
           <Ionicons name={icon} size={18} color="#111827" />
-
-          {/* ✅ Badge فقط على Chat */}
           {showBadge && unreadChats > 0 && (
             <View
               style={{
