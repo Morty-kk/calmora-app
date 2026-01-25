@@ -19,7 +19,7 @@ export default function AchtsamkeitMenu() {
         {/* Header mit Back-Button */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.replace("/menu")} // ✅ دايمًا يرجع عالـ Menu
             style={styles.backButton}
             activeOpacity={0.7}
           >
@@ -118,8 +118,16 @@ const styles = StyleSheet.create({
   headerTextWrap: {
     flexShrink: 1,
   },
-  title: { fontSize: 22, fontWeight: "600", marginBottom: 4, color: "#111827" },
-  desc: { fontSize: 14, color: "#333" },
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 4,
+    color: "#111827",
+  },
+  desc: {
+    fontSize: 14,
+    color: "#333",
+  },
 
   /* KARTEN */
   card: {
@@ -133,8 +141,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  cardTitle: { fontSize: 18, fontWeight: "700", color: "#2B2B2B" },
-  cardDesc: { fontSize: 13, color: "#3B3B3B", marginTop: 4 },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2B2B2B",
+  },
+  cardDesc: {
+    fontSize: 13,
+    color: "#3B3B3B",
+    marginTop: 4,
+  },
 
   /* BUTTON */
   btn: {
@@ -145,5 +161,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#9E86B9",
   },
-  btnText: { fontWeight: "700", color: "#9E86B9" },
+  btnText: {
+    fontWeight: "700",
+    color: "#9E86B9",
+  },
 });
